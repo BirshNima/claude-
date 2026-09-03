@@ -150,22 +150,22 @@
   <div class="ledger">
     <div class="ledger-head">
       <h2>Where the 10 steps stand</h2>
-      <span>8 built &middot; 2 blocked on access</span>
+      <span>All 10 have code or a plan &middot; 3 need accounts to run</span>
     </div>
     <ol>
       <li><span class="what"><b>Pricing engine</b> &mdash; rate table, quote() + verifyQuote(), 39 passing tests</span><span class="stat done">Built</span></li>
       <li><span class="what"><b>Quote funnel</b> &mdash; 6-step, forks instant-price / custom-quote / corporate</span><span class="stat done">Built</span></li>
       <li><span class="what"><b>CRM</b> &mdash; 11-table schema + intake transform with dedupe</span><span class="stat done">Built</span></li>
       <li><span class="what"><b>Booking / payment</b> &mdash; deposit engine, 3 endpoints, Stripe webhook, funnel wired</span><span class="stat done">Code built</span></li>
-      <li><span class="what"><b>SMS / email</b> &mdash; confirmations, reminders, day 0/1/3/7 follow-up</span><span class="stat wait">Needs account</span></li>
-      <li><span class="what"><b>Analytics</b> &mdash; GA4 + funnel events + lead-to-fare reporting</span><span class="stat wait">Needs account</span></li>
+      <li><span class="what"><b>SMS / email</b> &mdash; all templates, 4-touch follow-up state machine, STOP handling, dedupe</span><span class="stat done">Code built</span></li>
+      <li><span class="what"><b>Analytics</b> &mdash; tracker + attribution capture, GA4 event taxonomy, offline-conversion export</span><span class="stat done">Code built</span></li>
       <li><span class="what"><b>Homepage</b> &mdash; live rate board, 6 services, Journal, coverage grid</span><span class="stat done">Built</span></li>
       <li><span class="what"><b>Service pages</b> &mdash; 6 services + 14 city pages</span><span class="stat done">Built</span></li>
       <li><span class="what"><b>SEO</b> &mdash; 12-month plan, 12 journal posts, schema</span><span class="stat done">Built</span></li>
       <li><span class="what"><b>Ads / corporate growth</b> &mdash; 7-campaign plan, LSA, B2B outreach kit</span><span class="stat done">Built</span></li>
     </ol>
   </div>
-  <p class="phase-when" style="margin-top:10px">Step 4's code now exists too (<code>booking-payment/</code>: deposit engine, intake + deposit-link + webhook handlers, funnel wired). Steps 5&ndash;6 and running step 4 are the remaining gap &mdash; configuration in accounts only you can open. The phases below sequence that work.</p>
+  <p class="phase-when" style="margin-top:10px">Every step now has code or a plan on disk &mdash; <code>booking-payment/</code>, <code>comms/</code>, and <code>analytics/</code> were the last three. What remains is running them: opening the accounts (Stripe, Twilio, an email sender, GA4, Airtable), deploying the handlers, and filling in the secrets. The phases below sequence exactly that.</p>
 
   <!-- PHASE A -->
   <section class="phase" id="a">
@@ -236,8 +236,8 @@
   <!-- PHASE C -->
   <section class="phase" id="c">
     <div class="phase-tag"><span class="p-id">PHASE&nbsp;C</span><h2>Wire the funnel to the spine</h2></div>
-    <p class="intro">The code for this phase is now written &mdash; <span class="mono">booking-payment/</span> has the three endpoints, the deposit engine, and the Stripe webhook, and the funnel is already wired to call them. What is left is deploying it and filling in the secrets, in an interactive session where you are logged in.</p>
-    <p class="phase-when">~2&ndash;3 hrs &middot; needs A2&ndash;A4, B1</p>
+    <p class="intro">All the code for this phase is written &mdash; <span class="mono">booking-payment/</span> (payments), <span class="mono">comms/</span> (SMS + email), <span class="mono">analytics/</span> (tracking), and the funnel already calls all three. What is left is deploying it and filling in the secrets, in an interactive session where you are logged in.</p>
+    <p class="phase-when">~3&ndash;4 hrs &middot; needs A2&ndash;A5, B1</p>
 
     <div class="step">
       <h3><span class="sx">C1</span>Deploy the three endpoints</h3>
@@ -252,15 +252,15 @@
     </div>
 
     <div class="step">
-      <h3><span class="sx">C3</span>Connect the automations behind Airtable</h3>
-      <p>The 8 automations in the CRM doc drive off record state. Build them as Airtable automations or a Make/Zapier scenario: new lead &rarr; dispatch alert; quote sent &rarr; day 0/1/3/7 follow-up; booking confirmed &rarr; Stripe deposit link + confirmation email; 24h before &rarr; reminder SMS; trip complete &rarr; review request. Each one needs failure notification, retry, and a duplicate guard &mdash; the spec lists them per automation.</p>
-      <div class="meta-row"><span class="tag need">Uses: Twilio, Stripe, Workspace</span><span class="tag file">Spec: crm/index.html &sect; Automations</span></div>
+      <h3><span class="sx">C3</span>Wire the comms layer to CRM events</h3>
+      <p><code>comms/</code> has every message (<code>messages.js</code>), the 4-touch follow-up state machine (<code>sequences.js</code>), delivery with dedupe + retry + STOP handling (<code>send.js</code>). Point each CRM automation at <code>deliverAll(NWTCComms.plan(trigger, ctx))</code>; run an hourly job over open quotes with <code>NWTCSequence.nextAction()</code>. Add the <code>Messages</code> table + the Lead/Customer fields it writes. Start with <code>COMMS_DRY_RUN=1</code>.</p>
+      <div class="meta-row"><span class="tag need">Uses: Twilio (10DLC), an email sender</span><span class="tag file">Blueprint: comms/index.html</span></div>
     </div>
 
     <div class="step">
-      <h3><span class="sx">C4</span>Add the GA4 + GCLID capture</h3>
-      <p>Drop the GA4 tag on the funnel and every page. Fire funnel events (step viewed, quote shown, submit). The funnel and intake already read <span class="mono">gclid</span> / <span class="mono">wbraid</span> / <span class="mono">gbraid</span> off the URL and carry them to the Lead record &mdash; verify they land, because Phase E's offline conversion import depends on it.</p>
-      <div class="meta-row"><span class="tag need">Account: GA4</span><span class="tag file">Fields already in: crm/intake.js, crm/index.html</span></div>
+      <h3><span class="sx">C4</span>Deploy the analytics tracker</h3>
+      <p>Add the GA4 snippet + <code>analytics/events.js</code> + <code>NWTCAnalytics.init()</code> to every page and the funnel. The funnel already fires <span class="mono">funnel_start</span>, <span class="mono">funnel_step</span>, <span class="mono">quote_shown</span>, <span class="mono">generate_lead</span> and carries <code>getAttribution()</code> (source / campaign / gclid) into the payload &mdash; intake.js reads it onto the Lead. Register the custom dimensions, mark the key events, verify in DebugView with a test gclid.</p>
+      <div class="meta-row"><span class="tag need">Account: GA4</span><span class="tag file">Blueprint: analytics/index.html</span></div>
     </div>
   </section>
 
@@ -396,7 +396,7 @@
   </section>
 
   <footer>
-    Northwest Town Car Service &middot; Launch Runbook &middot; pairs with system-architecture/index.html (the full blueprint) and the per-step deliverables in pricing/, crm/, homepage-redesign/, seo/, growth/.
+    Northwest Town Car Service &middot; Launch Runbook &middot; updated 2026-09-03 &middot; pairs with system-architecture/index.html (the full blueprint) and the per-step deliverables in pricing/, booking-funnel/, crm/, booking-payment/, comms/, analytics/, homepage-redesign/, seo/, growth/.
   </footer>
 </div>
 

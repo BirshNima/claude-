@@ -18,6 +18,8 @@ the funnel so a visitor lands in a working sales system, not another contact for
 | `blog/*.html` — **12 journal posts** | https://claude.ai/code/artifact/444473ee-ca79-408f-ac3d-cd4bd2c458f6 (tabbed preview) |
 | Launch runbook (how to take all of this live) | https://claude.ai/code/artifact/8c911646-dea0-4824-8239-9a5534bb9f33 |
 | Booking &amp; payment blueprint (step 4) | https://claude.ai/code/artifact/700f56c4-35d3-4a02-a7c2-6260f3428c49 |
+| SMS &amp; email blueprint (step 5) | https://claude.ai/code/artifact/34669a90-1ea7-490a-a1fe-2a1fd3e88358 |
+| Analytics blueprint (step 6) | https://claude.ai/code/artifact/b303768f-b2cc-4a31-9e94-0b64fa1d7cde |
 | `_*.frag.html` | Publish copies (wrappers stripped, cross-links pointed at the artifact URLs). Regenerate from the `.html` files. |
 
 All six services and **all fourteen service areas** (Kent, Bellevue, Redmond,

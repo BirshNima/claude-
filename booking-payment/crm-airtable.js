@@ -180,13 +180,76 @@ async function markEvent(id) {
   return createRow('Webhook Events', { 'Event Id': id, Received: new Date().toISOString() });
 }
 
+/* ------------------------------------------------------------ comms (step 5)
+   Used by comms/send.js. All optional-table-tolerant: a missing table degrades
+   to "not found" rather than throwing, so sends aren't blocked before setup. */
+
+async function patchLead(reference, fields) {
+  const l = await getLead(reference);
+  if (!l) throw new Error(`No Lead ${reference}`);
+  return patchRow('Leads', l.id, fields);
+}
+
+/** Most recent Lead for a phone number (E.164 or 10-digit), or null. */
+async function findLatestLeadByPhone(phone) {
+  const d = String(phone || '').replace(/\D/g, '').replace(/^1/, '');
+  if (d.length < 10) return null;
+  const formula = `RIGHT(SUBSTITUTE({Phone}, "-", ""), 10) = '${d.slice(-10)}'`;
+  const data = await at(`${enc('Leads')}?maxRecords=1&sort%5B0%5D%5Bfield%5D=Created&sort%5B0%5D%5Bdirection%5D=desc&filterByFormula=${enc(formula)}`)
+    .catch(() => ({ records: [] }));
+  return data.records && data.records[0] ? data.records[0] : null;
+}
+
+/** Flip the opt-out flag on the Customer (and any open Lead) for a phone. */
+async function setContactOptOut(phone, optedOut) {
+  const d = String(phone || '').replace(/\D/g, '').replace(/^1/, '');
+  const cust = await findBy('Customers', 'Phone', '1' + d).catch(() => null)
+            || await findBy('Customers', 'Phone', d).catch(() => null);
+  if (cust) await patchRow('Customers', cust.id, { 'SMS Opt-out': !!optedOut, 'Marketing Opt-in': optedOut ? false : cust.fields['Marketing Opt-in'] });
+  return { updated: !!cust };
+}
+
+async function findMessage(dedupeKey) {
+  return findBy('Messages', 'Dedupe Key', dedupeKey).catch(() => null);
+}
+async function recordMessage(m) {
+  return createRow('Messages', {
+    'Dedupe Key': m.dedupeKey,
+    'Reference': m.reference || '',
+    'Template': m.template,
+    'Channel': m.channel,
+    'To': m.to || '',
+    'Status': m.status,
+    'Provider Id': m.providerId || '',
+    'Error': m.error || '',
+    'Sent At': new Date().toISOString(),
+  }).catch((e) => { console.error('[crm] recordMessage:', e.message); return null; });
+}
+async function appendFollowupStep(reference, step) {
+  const l = await getLead(reference);
+  if (!l) return null;
+  const cur = String(l.fields['Followup Steps Sent'] || '');
+  const set = new Set(cur.split(',').map((s) => s.trim()).filter(Boolean));
+  set.add(String(step));
+  return patchRow('Leads', l.id, {
+    'Followup Steps Sent': [...set].join(','),
+    'Next Follow-up': null,
+  });
+}
+
 module.exports = {
   applyOps,
   getBooking,
   getLead,
   patchBooking,
+  patchLead,
   recordPayment,
   logActivity,
   eventSeen,
   markEvent,
+  findLatestLeadByPhone,
+  setContactOptOut,
+  findMessage,
+  recordMessage,
+  appendFollowupStep,
 };

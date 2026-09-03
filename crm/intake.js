@@ -91,7 +91,18 @@
     var v = payload.values || {};
     var kind = payload.kind || 'quote-request';
     var q = payload.quote && payload.quote !== 'corporate' ? payload.quote : null;
-    var src = parseSource(payload.source, payload.gclid);
+    // Prefer the analytics module's resolved attribution (first/last-touch aware)
+    // when the funnel sent it; fall back to parsing the landing URL.
+    var src = payload.attribution && payload.attribution.source
+      ? {
+          source: payload.attribution.source,
+          medium: payload.attribution.medium || '',
+          campaign: payload.attribution.campaign || '',
+          term: payload.attribution.term || '',
+          gclid: payload.attribution.gclid || payload.gclid || '',
+          landing: payload.attribution.landingPage || ''
+        }
+      : parseSource(payload.source, payload.gclid);
     var phoneKey = normPhone(v.phone);
     var email = (v.email || '').trim().toLowerCase();
 

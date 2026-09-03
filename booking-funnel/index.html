@@ -460,6 +460,11 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
   var INTAKE_ENDPOINT = (window.NWTC_INTAKE_ENDPOINT || '');
   var TOTAL_STEPS = 6;
 
+  /* analytics/events.js if the host page loaded it; safe no-ops otherwise */
+  var A = window.NWTCAnalytics || null;
+  function track(name, params) { try { if (A && A.track) A.track(name, params || {}); } catch (e) {} }
+  var _startFired = false, _seenStep = {};
+
   var INSTANT = ['Airport pickup (from SEA)', 'Airport drop-off (to SEA)', 'Hourly / as-directed'];
   var AIRPORT = ['Airport pickup (from SEA)', 'Airport drop-off (to SEA)'];
   var PTP = ['Point-to-point', 'Round trip', 'Wedding / event', 'Cruise terminal'];
@@ -621,6 +626,7 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
         '<div class="estimate-line total"><span>Quoted total</span><span>' + money(q.finalAmount) + '</span></div>';
       disc.textContent = 'Quote holds ' + q.quoteExpiresHours + ' hours. Parking and tolls are billed at actual cost. Dispatch confirms the final quote, then sends a secure payment link for the deposit.';
       btnSubmit.textContent = 'Reserve this ride';
+      track('quote_shown', { service: d.service, quote_method: q.method, quote_value: q.finalAmount || 0, service_area: d.zone || '' });
     }
   }
 
@@ -639,6 +645,8 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
     btnNext.hidden = current === TOTAL_STEPS;
     btnSubmit.hidden = current !== TOTAL_STEPS;
     if (current === 6) renderReview();
+    if (!_startFired) { _startFired = true; track('funnel_start', {}); }
+    if (!_seenStep[current]) { _seenStep[current] = true; track('funnel_step', { step_index: current, step_name: (steps[current - 1] && steps[current - 1].dataset.name) || ('step' + current) }); }
     save();
     if (focus) { var h = steps[current - 1].querySelector('h2'); if (h) { h.setAttribute('tabindex', '-1'); h.focus(); } }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -695,11 +703,18 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
     var kind = q.corporate ? 'corporate-lead' : booked ? 'reservation' : 'quote-request';
     var ref = 'NWTC-' + new Date().toISOString().slice(2, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
 
+    var attr = (A && A.getAttribution) ? A.getAttribution() : null;
     var payload = {
       reference: ref, kind: kind, submittedAt: new Date().toISOString(),
       values: d, quote: q.corporate ? 'corporate' : { method: q.method, finalAmount: q.finalAmount || null, lineItems: q.lineItems },
-      source: location.href
+      source: location.href,
+      gclid: attr ? attr.gclid : undefined,
+      attribution: attr || undefined
     };
+    var val = q.corporate ? 0 : (q.finalAmount || 0);
+    track('generate_lead', { lead_kind: kind, value: val, currency: 'USD', service: d.service });
+    track(kind === 'reservation' ? 'reservation_submitted' : kind === 'corporate-lead' ? 'corporate_lead' : 'quote_requested',
+      { value: val, service: d.service, service_area: d.zone || '', reference: ref });
     // Keep a local copy first — this must survive even if the network call fails.
     try { var log = JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); log.push(payload); localStorage.setItem(LOG_KEY, JSON.stringify(log)); } catch (err) {}
     // Then hand it to the booking/payment server (re-prices, writes the CRM,
