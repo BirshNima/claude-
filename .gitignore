@@ -65,3 +65,6 @@ Thumbs.db
 scratchpad/
 tmp/
 *.log
+
+# Local tools (gh CLI, etc.)
+/bin/
