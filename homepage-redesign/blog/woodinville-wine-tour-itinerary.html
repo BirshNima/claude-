@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  :root{--forest:#0F1E19;--forest-2:#16281F;--forest-3:#0b1712;--cream:#F1ECE0;--cream-dim:#A9B3A6;--brass:#C09A56;--brass-lit:#D9B87A;--sage:#7E9583;--line:rgba(241,236,224,0.12);--line-2:rgba(241,236,224,0.22);}
+  :root{--forest:#0F1E19;--forest-2:#16281F;--forest-3:#0b1712;--cream:#F1ECE0;--cream-dim:#A9B3A6;--cream-soft:#dcd7c8;--brass:#C09A56;--brass-lit:#D9B87A;--sage:#7E9583;--line:rgba(241,236,224,0.12);--line-2:rgba(241,236,224,0.22);}
   *{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;}
   @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*{animation:none!important;transition:none!important;}}
@@ -32,10 +32,11 @@
   .head-right{margin-left:auto;display:flex;align-items:center;gap:14px;}
   .head-phone{font-family:ui-monospace,monospace;font-size:13px;color:var(--cream-dim);}
   @media(max-width:560px){.head-phone{display:none;}}
-  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:11px 20px;border-radius:999px;border:1px solid transparent;white-space:nowrap;color:#1c1305;background:var(--brass);}
-  .btn:hover{background:var(--brass-lit);text-decoration:none;}
-  .btn-line{background:transparent;border-color:var(--line-2);color:var(--cream);}
-  .btn-line:hover{border-color:var(--brass);color:var(--brass-lit);background:transparent;}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding:11px 20px;border-radius:999px;border:1px solid transparent;white-space:nowrap;transition:background .15s,border-color .15s;text-decoration:none;}
+  .btn-solid{background:var(--brass);color:#1c1305;}
+  .btn-solid:hover{background:var(--brass-lit);}
+  .btn-line{border-color:var(--line-2);color:var(--cream);}
+  .btn-line:hover{border-color:var(--brass);color:var(--brass-lit);}
   .crumbs{max-width:720px;margin:0 auto;padding:20px 28px 0;font-family:ui-monospace,monospace;font-size:11px;color:var(--cream-dim);}
   .crumbs a{color:var(--cream-dim);} .crumbs a:hover{color:var(--brass-lit);}
   article{padding:32px 0 40px;}
@@ -43,19 +44,19 @@
   .dek{font-size:19px;color:var(--cream-dim);margin-top:16px;}
   .byline{font-family:ui-monospace,monospace;font-size:12px;color:var(--cream-dim);margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
   .body{margin-top:28px;}
-  .body p{margin:0 0 1.2rem;color:#dcd7c8;}
+  .body p{margin:0 0 1.2rem;color:var(--cream-soft);}
   .body h2{font-size:clamp(21px,3vw,27px);margin:38px 0 14px;color:var(--cream);}
   .body h3{font-size:18px;margin:26px 0 8px;color:var(--cream);}
   .body strong{color:var(--cream);}
-  .body ul,.body ol{margin:0 0 1.2rem;padding-left:1.3rem;color:#dcd7c8;}
+  .body ul,.body ol{margin:0 0 1.2rem;padding-left:1.3rem;color:var(--cream-soft);}
   .body li{margin:.4rem 0;}
   .lede{font-size:19px;color:var(--cream);border-left:3px solid var(--brass);padding-left:18px;margin:0 0 1.6rem;}
   .plan{border:1px solid var(--line);border-radius:12px;background:var(--forest-2);padding:18px 20px;margin:20px 0;}
   .plan h3{margin:0 0 10px;color:var(--cream);font-size:17px;}
-  .plan .slot{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px;color:#dcd7c8;}
+  .plan .slot{display:grid;grid-template-columns:88px 1fr;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:14.5px;color:var(--cream-soft);}
   .plan .slot:first-of-type{border-top:none;}
   .plan .slot .t{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--brass-lit);}
-  .callout{border-left:3px solid var(--brass);background:var(--forest-2);border-radius:8px;padding:16px 18px;margin:24px 0;font-size:15px;color:#dcd7c8;}
+  .callout{border-left:3px solid var(--brass);background:var(--forest-2);border-radius:8px;padding:16px 18px;margin:24px 0;font-size:15px;color:var(--cream-soft);}
   .callout b{color:var(--cream);}
   .cta-block{border:1px solid var(--line);border-radius:14px;background:var(--forest-2);padding:26px;margin:32px 0;text-align:center;}
   .cta-block h3{font-size:21px;color:var(--cream);}
@@ -69,7 +70,7 @@
   .faq summary::-webkit-details-marker{display:none;}
   .faq summary::after{content:"+";color:var(--brass);font-family:ui-monospace,monospace;}
   .faq details[open] summary::after{content:"–";}
-  .faq details p{color:#dcd7c8;font-size:15px;margin-top:10px;}
+  .faq details p{color:var(--cream-soft);font-size:14px;margin-top:10px;}
   .related{margin-top:32px;font-family:ui-monospace,monospace;font-size:13px;color:var(--cream-dim);}
   footer.site{background:var(--forest-3);border-top:1px solid var(--line);padding:40px 0 28px;margin-top:32px;}
   footer.site .wrap{max-width:1080px;}
@@ -84,13 +85,13 @@
     <a class="wordmark" href="../index.html">NORTHWEST TOWN CAR <em>SERVICE</em></a>
     <nav>
       <a href="../index.html#services">Services</a>
-      <a href="../cruise-wine-tours.html">Cruise &amp; wine</a>
-      <a href="../hourly-chauffeur.html">Hourly</a>
+      <a href="../airport-transportation.html">Airport</a>
       <a href="../index.html#areas">Service area</a>
+      <a href="../corporate-transportation.html">Corporate</a>
     </nav>
     <div class="head-right">
       <a class="head-phone" href="tel:+12065965504">(206) 596-5504</a>
-      <a class="btn" href="../booking-funnel/index.html">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
     </div>
   </div>
 </header>
@@ -142,7 +143,7 @@
       <h3>Plan a Woodinville wine tour</h3>
       <p>Booked by the hour, with a driver who knows which rooms take walk-ins and which need a reservation.</p>
       <div class="cta-row">
-        <a class="btn" href="../cruise-wine-tours.html">Wine tours</a>
+        <a class="btn btn-solid" href="../cruise-wine-tours.html">Wine tours</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
