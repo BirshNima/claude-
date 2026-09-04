@@ -190,6 +190,7 @@
         'Next Follow-up': status === 'Quote Sent' ? addHours(payload.submittedAt || now, 3) : null,
         Notes: v.notes || '',
         Consent: v.consent === 'yes',
+        'Payment Preference': v.paymentPreference === 'cash' ? 'cash' : 'card',
         'Raw Payload': safeJson(payload),
         _linkCustomer: customerMatch,          // applier resolves link from the matched Customer
         _linkCorporate: corpMatch || undefined
@@ -239,6 +240,7 @@
           'Flight #': v.flight || '',
           Price: q ? q.finalAmount : null,
           'Deposit Paid': 0,
+          'Payment Preference': v.paymentPreference === 'cash' ? 'cash' : 'card',
           Status: 'Reserved',
           'Special Requests': v.notes || '',
           'Pricing Breakdown': q ? safeJson(q.lineItems) : '',

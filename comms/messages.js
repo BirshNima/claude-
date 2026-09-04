@@ -142,6 +142,35 @@
         ].filter(function (l) { return l !== undefined; }).join('\n');
       }
     },
+    /* ---- cash bookings (fired when /deposit-link resolves to cash) ---- */
+    'cash.confirmed.sms': {
+      channels: ['sms'],
+      text: function (v) {
+        return BRAND + ': ' + v.reference + ' is confirmed for ' + v.dateShort +
+          '. Please have ' + v.cashText + ' in cash ready for your driver at the end of the trip. ' + SIGN;
+      }
+    },
+    'cash.confirmed.email': {
+      channels: ['email'],
+      subject: function (v) { return 'Booked — ' + v.reference + ' (paying cash)'; },
+      text: function (v) {
+        return [
+          'Hi ' + first(v.name) + ',',
+          '',
+          'Your ride is confirmed. You chose to pay the driver in cash:',
+          '',
+          block(v),
+          '',
+          'Amount due to the driver: ' + v.cashText + ', in cash, at the end of the trip.',
+          "We'll send your driver's name, phone, and vehicle 24 hours before pickup.",
+          '',
+          'Prefer to pay by card instead? Just reply and we\'ll send a secure link.',
+          '',
+          SIGN
+        ].join('\n');
+      }
+    },
+
     'deposit.received.sms': {
       channels: ['sms'],
       text: function (v) {
@@ -174,7 +203,8 @@
       text: function (v) {
         return BRAND + ' tomorrow: ' + v.timeShort + ' pickup at ' + v.pickupShort + '. ' +
           'Your chauffeur ' + v.driverName + ' (' + v.driverPhone + ') in a ' + v.vehicleText + '. ' +
-          (v.flight ? 'Tracking ' + v.flight + '. ' : '') + SIGN;
+          (v.flight ? 'Tracking ' + v.flight + '. ' : '') +
+          (v.cashText ? 'Please have ' + v.cashText + ' cash ready for the driver. ' : '') + SIGN;
       }
     },
     'reminder.email': {
@@ -191,6 +221,7 @@
           'Chauffeur: ' + v.driverName + ', ' + v.driverPhone,
           'Vehicle:   ' + v.vehicleText,
           v.flight ? ('Flight:    ' + v.flight + ' (we track it — no need to adjust for delays)') : '',
+          v.cashText ? ('Payment:   ' + v.cashText + ' in cash to the driver at the end of the trip') : '',
           '',
           'Meeting point: ' + (v.meetNote || 'your chauffeur will text on arrival.'),
           '',
@@ -297,6 +328,7 @@
     'lead.created.quote':       ['ack.quote.sms', 'ack.quote.email'],
     'lead.created.corporate':   ['ack.corporate.email'],
     'deposit.link.created':     ['deposit.request.sms', 'deposit.request.email'],
+    'booking.cash.confirmed':   ['cash.confirmed.sms', 'cash.confirmed.email'],
     'deposit.paid':             ['deposit.received.sms', 'deposit.received.email'],
     'trip.reminder':            ['reminder.sms', 'reminder.email'],
     'trip.completed':           ['trip.thanks.sms'],

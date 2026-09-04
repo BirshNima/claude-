@@ -124,6 +124,11 @@
   .next-list li:first-child{border-top:none;}
   .next-list li::before{content:"→";position:absolute;left:0;color:var(--brass);}
   #copy-status{min-height:1.2em;}
+  .pay-choice{border:1px solid var(--line);border-radius:12px;padding:16px;margin:18px 0 0;display:flex;flex-direction:column;gap:10px;}
+  .pay-choice legend{font-family:ui-monospace,monospace;font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:var(--brass-bright);padding:0 4px;}
+  .pay-opt{display:flex;gap:10px;align-items:flex-start;font-size:.92rem;line-height:1.45;cursor:pointer;color:var(--paper-dim);}
+  .pay-opt input{margin-top:3px;flex:none;accent-color:var(--brass);}
+  .pay-opt strong{color:var(--paper);text-transform:none;letter-spacing:normal;}
   .conf-sync{font-size:.9rem;padding:10px 14px;border-radius:8px;margin:0 0 4px;}
   .conf-sync.ok{background:rgba(62,122,82,0.12);color:#2f5d3f;}
   .conf-sync.warn{background:rgba(168,68,58,0.10);color:#8a3a30;}
@@ -307,6 +312,13 @@
           <p class="estimate-disclaimer" id="estimate-disc"></p>
         </aside>
       </div>
+      <fieldset class="pay-choice" id="pay-choice" hidden>
+        <legend>How would you like to pay?</legend>
+        <label class="pay-opt"><input type="radio" name="paymentPreference" value="card" checked>
+          <span><strong>Card</strong> — we email a secure link for the deposit once dispatch confirms; the balance is charged after the trip.</span></label>
+        <label class="pay-opt"><input type="radio" name="paymentPreference" value="cash">
+          <span><strong>Cash to the driver</strong> — pay the full fare in cash at the end of the trip. No deposit. Dispatch confirms every cash booking.</span></label>
+      </fieldset>
       <p class="field-error" data-error="submit" hidden>Something's missing above. Step back and check the highlighted fields.</p>
     </section>
 
@@ -606,6 +618,8 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
     var q = currentQuote();
     var body = document.getElementById('estimate-body');
     var disc = document.getElementById('estimate-disc');
+    var payChoice = document.getElementById('pay-choice');
+    payChoice.hidden = true;
     if (q.corporate) {
       body.innerHTML = '<p class="estimate-quote">A corporate specialist will call to set up your account and rate sheet.</p>';
       disc.textContent = '';
@@ -624,8 +638,9 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
       }).join('');
       body.innerHTML = tag + head + lines +
         '<div class="estimate-line total"><span>Quoted total</span><span>' + money(q.finalAmount) + '</span></div>';
-      disc.textContent = 'Quote holds ' + q.quoteExpiresHours + ' hours. Parking and tolls are billed at actual cost. Dispatch confirms the final quote, then sends a secure payment link for the deposit.';
+      disc.textContent = 'Quote holds ' + q.quoteExpiresHours + ' hours. Parking and tolls are billed at actual cost. Dispatch confirms the final quote before any payment.';
       btnSubmit.textContent = 'Reserve this ride';
+      payChoice.hidden = false;
       track('quote_shown', { service: d.service, quote_method: q.method, quote_value: q.finalAmount || 0, service_area: d.zone || '' });
     }
   }
@@ -732,11 +747,14 @@ global.NWTCPricing={quote:quote,verifyQuote:verifyQuote};
     var lede = document.getElementById('conf-lede');
     var next = document.getElementById('conf-next');
     if (booked) {
+      var cash = d.paymentPreference === 'cash';
       kicker.textContent = 'Reservation received';
       lede.textContent = 'Your ride is reserved at the quoted price below. Dispatch confirms the driver and vehicle shortly.';
       next.innerHTML = [
         'Text and email confirmation on the way to ' + esc(d.phone) + ' and ' + esc(d.email) + '.',
-        'Dispatch confirms the final quote (' + money(q.finalAmount) + ', held ' + q.quoteExpiresHours + ' h) and sends a secure link for the deposit.',
+        cash
+          ? 'You chose to pay cash — have ' + money(q.finalAmount) + ' ready for your driver at the end of the trip. Dispatch confirms every cash booking.'
+          : 'Dispatch confirms the final quote (' + money(q.finalAmount) + ', held ' + q.quoteExpiresHours + ' h) and sends a secure link for the deposit.',
         'A reminder with your driver and vehicle goes out 24 hours before pickup.'
       ].map(function (x) { return '<li>' + x + '</li>'; }).join('');
     } else if (q.corporate) {

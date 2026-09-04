@@ -49,6 +49,18 @@ const json = (status, body) => ({
 });
 const bad = (msg, status = 400) => json(status, { ok: false, error: msg });
 
+/* Fire a comms plan (step 5). Lazy-required so payments still run if comms
+   isn't deployed yet. Never throws into the request. */
+let _comms = null;
+async function deliverComms(trigger, ctx) {
+  try {
+    if (!_comms) _comms = { msg: require('../comms/messages.js'), send: require('../comms/send.js') };
+    await _comms.send.deliverAll(_comms.msg.plan(trigger, ctx));
+  } catch (e) {
+    console.error('[comms] deliver failed:', e.message);
+  }
+}
+
 async function notifyDispatch(subject, lines) {
   // Wire to your sender (Postmark/SES/Twilio). Kept as one call so the rest of
   // the file is provider-agnostic. Must not throw the request.
@@ -134,11 +146,14 @@ async function handleIntake(rawBody) {
       `Passengers  ${v.passengers || '?'}   Bags ${v.bags || '?'}   Vehicle ${v.vehicle || 'let us choose'}`,
       `Amount      ${money}${verified && !verified.valid ? `  (client said $${verified.clientAmount})` : ''}`,
       `Contact     ${v.name || ''} · ${v.phone || ''} · ${v.email || ''}`,
+      `Payment     ${v.paymentPreference === 'cash' ? 'CASH to driver (customer chose)' : 'card'}`,
       v.flight ? `Flight      ${v.flight}` : '',
       v.notes ? `Notes       ${v.notes}` : '',
       ``,
       summary.createsBooking
-        ? `NEXT: confirm driver + vehicle, then POST /deposit-link {"reference":"${payload.reference}"} to send the deposit.`
+        ? (v.paymentPreference === 'cash'
+            ? `NEXT: confirm driver + vehicle, then POST /deposit-link {"reference":"${payload.reference}","paymentMethod":"cash"} — no card link, records the cash due.`
+            : `NEXT: confirm driver + vehicle, then POST /deposit-link {"reference":"${payload.reference}"} to send the deposit.`)
         : `NEXT: price this and send a written quote. No deposit until they accept.`,
     ].filter(Boolean)
   );
@@ -185,10 +200,22 @@ async function handleDepositLink(rawBody, headers) {
   const quoteMethod = (leadRec && leadRec.fields['Quote Method'])
     || (bf['Quote Method']) || 'flat';
 
+  // Payment method: explicit on the request wins, else the customer's funnel
+  // preference stored on the Booking/Lead, else card.
+  const paymentMethod = (req.paymentMethod
+    || bf['Payment Preference']
+    || (leadRec && leadRec.fields['Payment Preference'])
+    || 'card').toLowerCase();
+  const newCustomer = bf['Customer Trip Count'] != null
+    ? Number(bf['Customer Trip Count']) === 0
+    : (leadRec ? leadRec.fields['New Customer'] === true : false);
+
   const booking = {
     reference,
     kind: 'reservation',
     quoteMethod,
+    paymentMethod,
+    newCustomer,
     fareAmount: num(bf.Price),
     depositOverride: num(req.depositOverride),
     serviceLabel: bf.Service || 'Northwest Town Car Service',
@@ -199,6 +226,50 @@ async function handleDepositLink(rawBody, headers) {
   };
 
   const plan = PAY.depositPlan(booking, table);
+
+  // ---- Cash: no Stripe. Record the expected cash, confirm (or hold), notify. ----
+  if (plan.basis === 'cash') {
+    const held = plan.blocked && !req.force;
+    await crm.patchBooking(reference, {
+      'Payment Method': 'Cash',
+      'Deposit Amount': 0,
+      'Balance': plan.cashDue,
+      'Cash Due': plan.cashDue,
+      'Deposit Note': plan.reason,
+      Status: held ? 'Needs Approval' : 'Confirmed',
+    });
+    await crm.recordPayment({
+      reference, amount: plan.cashDue || 0, type: 'Balance', status: 'Pending',
+      dedupeRef: `${reference}:cash-expected`, method: 'cash', note: plan.reason,
+    });
+    await crm.logActivity({
+      ref: reference, event: held ? 'cash:held-for-approval' : 'cash:confirmed',
+      detail: plan.reason, actor: 'dispatch',
+    });
+    if (held) {
+      await notifyDispatch(`Cash booking needs approval — ${reference}`, [
+        plan.reason, `Approve with POST /deposit-link {"reference":"${reference}","paymentMethod":"cash","force":true}`,
+        `or send a card deposit link instead (omit paymentMethod).`,
+      ]);
+    } else {
+      // customer-facing "pay the driver" confirmation
+      await deliverComms('booking.cash.confirmed', {
+        reference,
+        contact: { phone: bf['Customer Phone'] || (leadRec && leadRec.fields.Phone), email: booking.customerEmail },
+        vars: {
+          name: booking.customerName, reference,
+          serviceLabel: booking.serviceLabel, routeText: booking.pickupText,
+          dateShort: bf.Date || '', timeShort: bf.Time || '',
+          cashText: plan.cashDue != null ? `$${plan.cashDue}` : 'the quoted fare',
+        },
+      });
+    }
+    return json(200, {
+      ok: true, reference, paymentMethod: 'cash',
+      depositDue: false, held, cashDue: plan.cashDue, reason: plan.reason,
+    });
+  }
+
   if (!plan.due) {
     await crm.patchBooking(reference, { Status: 'Confirmed', 'Deposit Note': plan.reason });
     return json(200, { ok: true, reference, depositDue: false, reason: plan.reason });
@@ -252,6 +323,58 @@ async function handleDepositLink(rawBody, headers) {
     expiresAt: session.expires_at,
   });
 }
+
+/* ============================================================================
+   2b. POST /record-cash-payment   — private, dispatch/driver
+   ----------------------------------------------------------------------------
+   After a cash trip: mark what the driver actually collected. Same bearer token
+   as /deposit-link. Body: { reference, amount?, type?, gratuity? }
+     amount   defaults to the Booking's Cash Due
+     type     'Balance' (default) | 'Deposit' | 'Gratuity'
+   ========================================================================== */
+async function handleRecordCash(rawBody, headers) {
+  const auth = (headers.authorization || headers.Authorization || '').replace(/^Bearer\s+/i, '');
+  if (!DISPATCH_TOKEN || auth !== DISPATCH_TOKEN) return bad('unauthorized', 401);
+
+  let req;
+  try { req = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody; }
+  catch { return bad('invalid JSON'); }
+  const reference = req && req.reference;
+  if (!reference) return bad('reference required');
+
+  const bRec = await crm.getBooking(reference);
+  if (!bRec) return bad(`no Booking ${reference}`, 404);
+  const bf = bRec.fields;
+
+  const type = req.type || 'Balance';
+  const amount = num(req.amount) != null ? num(req.amount)
+    : num(bf['Cash Due']) != null ? num(bf['Cash Due'])
+    : num(bf.Price);
+  if (amount == null) return bad('no amount and no Cash Due / Price on the booking');
+
+  const gratuity = num(req.gratuity) || 0;
+  const collected = round2(amount + gratuity);
+
+  await crm.recordPayment({
+    reference, amount: collected, type, status: 'Succeeded',
+    dedupeRef: `${reference}:cash-collected`, method: 'cash',
+    note: `Cash collected by the driver${gratuity ? ` (incl. $${gratuity} gratuity)` : ''}`,
+  });
+  const prior = num(bf['Fare Collected']) || 0;
+  await crm.patchBooking(reference, {
+    'Payment Method': 'Cash',
+    'Fare Collected': round2(prior + collected),
+    'Fare Collected At': new Date().toISOString(),
+    Status: 'Completed',
+  });
+  await crm.logActivity({
+    ref: reference, event: 'cash:collected', actor: 'driver',
+    detail: `$${collected} ${type.toLowerCase()}`,
+  });
+  return json(200, { ok: true, reference, collected, method: 'cash', status: 'Succeeded' });
+}
+
+const round2 = (n) => Math.round(Number(n) * 100) / 100;
 
 /* ============================================================================
    3. POST /stripe-webhook
@@ -454,6 +577,7 @@ function worker() {
       let r;
       if (url.pathname.endsWith('/intake') && request.method === 'POST') r = await handleIntake(raw);
       else if (url.pathname.endsWith('/deposit-link') && request.method === 'POST') r = await handleDepositLink(raw, headers);
+      else if (url.pathname.endsWith('/record-cash-payment') && request.method === 'POST') r = await handleRecordCash(raw, headers);
       else if (url.pathname.endsWith('/stripe-webhook') && request.method === 'POST') r = await handleStripeWebhook(raw, headers);
       else r = bad('not found', 404);
       return new Response(r.body, { status: r.status, headers: r.headers });
@@ -477,6 +601,7 @@ const lower = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k.toL
 module.exports = {
   handleIntake,
   handleDepositLink,
+  handleRecordCash,
   handleStripeWebhook,
   buildPricingRequest,
   netlify,

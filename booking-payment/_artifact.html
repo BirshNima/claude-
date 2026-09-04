@@ -119,7 +119,7 @@
     <div class="toc-title">Step 4</div>
     <ol>
       <li><a href="#flow">The money flow</a></li>
-      <li><a href="#endpoints">The three endpoints</a></li>
+      <li><a href="#endpoints">The endpoints</a></li>
       <li><a href="#deposit">Deposit policy</a></li>
       <li><a href="#webhooks">Webhook events</a></li>
       <li><a href="#manual">What stays manual</a></li>
@@ -159,13 +159,18 @@
       </div>
 
       <div class="note">
+        <span class="lbl">The cash branch</span>
+        <p>At the review step the customer can choose <strong>"cash to the driver"</strong> instead of a card. That choice rides in the payload to the Lead and Booking. At the gate, dispatch runs <code>/deposit-link</code> with <code>paymentMethod: "cash"</code> — no Stripe session; the full fare is recorded as a <code>Pending</code> cash Payment and the booking is confirmed (or held for approval over $600 / for a new customer). After the trip the driver runs <code>/record-cash-payment</code> and it becomes <code>Fare Collected</code>. Same human gate, no card.</p>
+      </div>
+
+      <div class="note">
         <span class="lbl">Why a person in the middle</span>
         <p>An instant price is reliable enough to <em>show</em> and to reserve against — but a deposit is money changing hands. Dispatch confirming first catches the impossible pickup time, the address in the wrong county, the SUV request for 8 people, and the rare price bug — before the customer is charged, not after. It costs one tap.</p>
       </div>
     </section>
 
     <section id="endpoints">
-      <h2><span class="n">02</span> The three endpoints</h2>
+      <h2><span class="n">02</span> The endpoints</h2>
       <p>All in <code>booking-payment/server.js</code> as framework-agnostic handlers, with adapters for Netlify Functions, Cloudflare Workers, and Express/Vercel at the bottom of the file.</p>
 
       <div class="ep-card">
@@ -186,9 +191,20 @@
         <dl>
           <dt>Guard</dt><dd>Booking <code>Status</code> must be <code>Reserved</code> or <code>Confirmed</code> and not already paid. Pass <code>{"force":true}</code> to override; <code>{"depositOverride": 30}</code> to set a custom amount or <code>0</code> to waive.</dd>
           <dt>Deposit</dt><dd><code>NWTCPayments.depositPlan(booking, table)</code> — flat for instant-price rides, percent for custom quotes, none for corporate. See §3.</dd>
-          <dt>Stripe</dt><dd>One Checkout Session, <code>mode: payment</code>, idempotency key <code>deposit_&lt;Reference&gt;</code>, metadata carries reference / fare / balance / refund window.</dd>
+          <dt>Cash</dt><dd><code>{"paymentMethod":"cash"}</code> (or the customer's funnel choice) → <strong>no Stripe</strong>. Records the full fare as a <code>Pending</code> cash Payment, sets <code>Payment Method: Cash</code>, confirms the booking — unless the fare is over the cash limit or the customer is new, when it goes to <code>Needs Approval</code> and pings dispatch. <code>{"force":true}</code> approves a held one.</dd>
+          <dt>Stripe</dt><dd>(card only) One Checkout Session, <code>mode: payment</code>, idempotency key <code>deposit_&lt;Reference&gt;</code>, metadata carries reference / fare / balance / refund window.</dd>
           <dt>Writes</dt><dd>Booking: <code>Deposit Amount</code>, <code>Balance</code>, <code>Deposit Link</code>, <code>Deposit Session Id</code>, <code>Status → Confirmed</code>. Payments: one <code>Pending</code> row.</dd>
-          <dt>Returns</dt><dd><code>{ ok, amount, balanceDue, checkoutUrl, sessionId, expiresAt }</code> — put <code>checkoutUrl</code> in the confirmation message.</dd>
+          <dt>Returns</dt><dd><code>{ ok, amount, balanceDue, checkoutUrl, sessionId, expiresAt }</code> for card; <code>{ ok, paymentMethod:"cash", held, cashDue }</code> for cash.</dd>
+        </dl>
+      </div>
+
+      <div class="ep-card">
+        <div class="ep-head"><span class="m">POST</span><h3>/record-cash-payment</h3><span class="ep-vis pill gate">dispatch / driver</span></div>
+        <p>After a cash trip — the driver (or dispatch) records what was actually collected. Same bearer token as <code>/deposit-link</code>.</p>
+        <dl>
+          <dt>Body</dt><dd><code>{ reference, amount?, type?, gratuity? }</code> — <code>amount</code> defaults to the Booking's <code>Cash Due</code>; <code>type</code> is <code>Balance</code> (default) / <code>Deposit</code> / <code>Gratuity</code>.</dd>
+          <dt>Writes</dt><dd>Payments: a <code>Succeeded</code> cash row. Booking: <code>Fare Collected</code> (+=), <code>Fare Collected At</code>, <code>Status → Completed</code>.</dd>
+          <dt>Why</dt><dd>Keeps the CRM and the offline-conversion feed (step 6) accurate — a cash fare still counts as revenue for Google Ads bidding.</dd>
         </dl>
       </div>
 
@@ -212,11 +228,13 @@
             <tr><td>Airport flat / hourly (instant price)</td><td><strong>$50 flat</strong></td><td>Yes — balance due after the trip</td><td>Up to 24 h before pickup</td></tr>
             <tr><td>Wedding / event / out-of-area (custom quote)</td><td><strong>25% of the quoted fare</strong><br><span class="mono">dispatch can override per quote</span></td><td>Yes</td><td>Up to 24 h before pickup</td></tr>
             <tr><td>Corporate / on-account</td><td><strong>None</strong> — billed per rate agreement</td><td>n/a</td><td>n/a</td></tr>
+            <tr><td><strong>Cash to the driver</strong> (customer's choice)</td><td><strong>None</strong> — full fare paid in cash at trip's end</td><td>n/a — it <em>is</em> the fare</td><td>n/a</td></tr>
             <tr><td>Dispatch override</td><td>Any amount, or <code>0</code> to waive</td><td>Yes (unless waived)</td><td>Up to 24 h before pickup</td></tr>
           </tbody>
         </table>
       </div>
       <p><strong>Floor:</strong> <code>minAmount</code> $25. The deposit is never more than the fare itself. A percent policy with no known fare falls back to the $50 flat so a link can still go out.</p>
+      <p><strong>Cash</strong> (<code>"deposit.cash"</code>): allowed up to <code>maxFare</code> $600. Above that, or for a first-time customer (<code>flagNewCustomers</code>), the booking waits at <code>Needs Approval</code> for dispatch. If you want a card deposit to hold a cash booking's slot, send a normal deposit link instead and tell the customer the balance is cash.</p>
       <div class="note">
         <span class="lbl">Decision 1 from the launch runbook</span>
         <p>These are the recommended defaults ($50 flat / 25% custom / refundable to 24 h). If you want a different number or window, change the four values in <code>pricing-table.json</code> and bump its <code>version</code> — no redeploy of the payment code.</p>
@@ -246,6 +264,7 @@
         <li><strong>Cancellations inside the window</strong> <span class="pill risk">human</span> — fee or goodwill waiver is a judgement call.</li>
         <li><strong>Deposit overrides &amp; waivers</strong> <span class="pill gate">human</span> — passed explicitly on <code>/deposit-link</code>; never automatic.</li>
         <li><strong>Releasing a held booking</strong> <span class="pill gate">human</span> — after a payment failure, dispatch decides.</li>
+        <li><strong>Approving a cash booking</strong> <span class="pill gate">human</span> — every one is confirmed by dispatch; large fares and new customers are held explicitly. Recording the collected cash is a one-line call the driver makes after the trip.</li>
         <li><strong>Corporate billing</strong> <span class="pill gate">human</span> — on-account, invoiced per agreement, outside this flow.</li>
       </ul>
     </section>
@@ -254,12 +273,13 @@
       <h2><span class="n">06</span> Deploy &amp; test</h2>
       <ol class="checklist">
         <li>Copy <code>config.example.env</code> → <code>.env</code>. Fill Stripe <strong>test</strong> keys, the Airtable token + base id, a <code>DISPATCH_API_TOKEN</code> (64 random chars), and a <code>DISPATCH_WEBHOOK_URL</code> (a Make catch-hook or Slack incoming webhook).</li>
-        <li>Add two tables to the Airtable base: <code>Webhook Events</code> (Event Id, Received) and confirm <code>Payments</code> has Amount / Type / Method / Processor Ref / Status / Note. Booking needs the deposit fields the server writes (<code>Deposit Amount</code>, <code>Balance</code>, <code>Deposit Link</code>, <code>Deposit Session Id</code>, <code>Deposit Paid</code>, <code>Deposit Paid At</code>).</li>
+        <li>Add two tables to the Airtable base: <code>Webhook Events</code> (Event Id, Received) and confirm <code>Payments</code> has Amount / Type / Method / Processor Ref / Status / Note. Booking needs the deposit fields the server writes (<code>Deposit Amount</code>, <code>Balance</code>, <code>Deposit Link</code>, <code>Deposit Session Id</code>, <code>Deposit Paid</code>, <code>Deposit Paid At</code>) plus the cash fields (<code>Payment Method</code>, <code>Payment Preference</code>, <code>Cash Due</code>, <code>Fare Collected</code>, <code>Fare Collected At</code>) and a <code>Needs Approval</code> option on <code>Status</code>.</li>
         <li>Deploy the three handlers. In Stripe → Developers → Webhooks, add the endpoint and subscribe to the four events; paste the signing secret into <code>.env</code>.</li>
         <li>Set <code>window.NWTC_INTAKE_ENDPOINT</code> on the funnel page to the deployed <code>/intake</code> URL. Submit one airport booking — confirm one Lead, one Customer, one Booking (<code>Reserved</code>), and a dispatch alert.</li>
         <li>Confirm that booking, then <code>curl -H "Authorization: Bearer &lt;token&gt;" -d '{"reference":"NWTC-…"}' …/deposit-link</code>. Open the returned <code>checkoutUrl</code>.</li>
         <li>Pay with Stripe test card <code>4242 4242 4242 4242</code>, any future expiry, any CVC. Confirm Payment → <code>Succeeded</code>, Booking → <code>Deposit Paid</code>, <code>Balance</code> correct, dispatch notified.</li>
         <li>Test the sad paths: card <code>4000 0000 0000 9995</code> (declined) → Payment <code>Failed</code>; let a session expire → <code>checkout.session.expired</code> handled. Use the Stripe CLI (<code>stripe listen --forward-to …/stripe-webhook</code>) to replay events locally.</li>
+        <li>Test cash: submit a funnel booking with "cash to the driver" selected. Confirm the Lead/Booking show <code>Payment Preference: cash</code>, then <code>POST /deposit-link {"reference":"…","paymentMethod":"cash"}</code> → no Stripe, Booking <code>Confirmed</code>, a <code>Pending</code> cash Payment for the full fare, cash confirmation sent. Then <code>POST /record-cash-payment {"reference":"…"}</code> → Payment <code>Succeeded</code>, <code>Fare Collected</code> set. Try a fare over $600 → <code>Needs Approval</code> + dispatch alert.</li>
         <li>Re-submit the same funnel <code>payload</code> twice — verify still one Lead, one Booking (idempotent on <code>Reference</code>).</li>
         <li>Only when all eight pass: swap to Stripe <strong>live</strong> keys and a live webhook secret.</li>
       </ol>

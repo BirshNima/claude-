@@ -68,6 +68,28 @@
         'Deposit set by dispatch: $' + amt.toFixed(2) + '.');
     }
 
+    // Cash: the customer pays the driver the full fare in cash at the end of the
+    // trip. No online deposit is taken. `blocked` means the booking should wait
+    // for dispatch approval (fare over the cash limit, or a new customer) rather
+    // than auto-confirm. A card hold, when wanted, is a normal deposit link with
+    // paymentMethod left as 'card' — not modelled here.
+    if (booking.paymentMethod === 'cash') {
+      var cash = d.cash || {};
+      var r = cash.restrictions || {};
+      var overLimit = isNum(r.maxFare) && fare != null && fare > r.maxFare;
+      var blocked = cash.allowed === false || overLimit ||
+        (r.flagNewCustomers === true && booking.newCustomer === true);
+      var out = dry('cash', 0, false, refundHrs, fare,
+        blocked
+          ? ('Cash requested' + (overLimit ? ' but the $' + fare.toFixed(2) + ' fare is over the $' + r.maxFare + ' cash limit' : booking.newCustomer ? ' by a first-time customer' : ' but cash is disabled') + ' — hold for dispatch approval.')
+          : ('Cash to the driver — $' + (fare != null ? fare.toFixed(2) : 'the quoted fare') + ' due in full at the end of the trip. No card deposit.'));
+      out.paymentMethod = 'cash';
+      out.blocked = !!blocked;
+      out.cashDue = fare != null ? round2(fare) : null;
+      out.balanceDue = out.cashDue;
+      return out;
+    }
+
     // Instant-price rides (airport flat, hourly) -> flat deposit.
     var instant = booking.quoteMethod === 'flat' || booking.quoteMethod === 'hourly';
     var policy = instant ? (d.instantPrice || { type: 'flat', amount: 50 })
