@@ -72,6 +72,29 @@
   .foot-links{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--cream-dim);margin-bottom:16px;}
   .foot-links a:hover{color:var(--brass-lit);}
   .foot-bar{padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:ui-monospace,monospace;font-size:11px;color:var(--cream-dim);}
+
+  /* ---- mobile nav (<=899px) ---- */
+  .m-nav-btn,.m-nav-cta,.m-nav-tel{display:none;}
+  @media (max-width:899px){
+    header.site .wrap{height:auto;min-height:62px;gap:12px;}
+    .wordmark{font-size:14px;letter-spacing:0.01em;}
+    .head-right{display:none;}
+    .m-nav-btn{order:2;margin-left:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;background:transparent;border:1px solid var(--line-2);border-radius:9px;color:var(--cream);cursor:pointer;}
+    .m-nav-btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px;}
+    .m-nav-icon{position:relative;display:block;width:17px;height:2px;background:currentColor;}
+    .m-nav-icon::before,.m-nav-icon::after{content:"";position:absolute;left:0;width:17px;height:2px;background:currentColor;transition:transform .2s ease;}
+    .m-nav-icon::before{top:-6px;} .m-nav-icon::after{top:6px;}
+    .m-nav-btn[aria-expanded="true"] .m-nav-icon{background:transparent;}
+    .m-nav-btn[aria-expanded="true"] .m-nav-icon::before{transform:translateY(6px) rotate(45deg);}
+    .m-nav-btn[aria-expanded="true"] .m-nav-icon::after{transform:translateY(-6px) rotate(-45deg);}
+    header.site nav{position:absolute;left:0;right:0;top:100%;display:flex;flex-direction:column;gap:0;margin:0;font-size:15px;background:var(--forest-2);border-bottom:1px solid var(--line);box-shadow:0 20px 40px -24px rgba(0,0,0,.6);max-height:0;overflow:hidden;visibility:hidden;transition:max-height .24s ease,visibility .24s;}
+    header.site nav.m-open{max-height:82vh;overflow-y:auto;visibility:visible;}
+    header.site nav a{padding:14px 28px;border-top:1px solid var(--line);color:var(--cream);}
+    header.site nav a:first-child{border-top:none;}
+    .m-nav-cta,.m-nav-tel{display:block;margin:10px 20px;padding:12px;text-align:center;font-weight:600;border-radius:999px;border-top:none!important;}
+    .m-nav-cta{background:var(--brass);color:#1c1305;}
+    .m-nav-tel{margin-top:0;border:1px solid var(--line-2)!important;color:var(--cream);font-family:ui-monospace,monospace;font-size:13px;}
+  }
 </style>
 
 <style>
@@ -85,16 +108,19 @@
 <header class="site">
   <div class="wrap">
     <a class="wordmark" href="https://claude.ai/code/artifact/512f79cc-ca9b-4c1e-b2fd-80647f25cd88">NORTHWEST TOWN CAR <em>SERVICE</em></a>
-    <nav>
+    <button class="m-nav-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><span class="m-nav-icon"></span></button>
+    <nav id="site-nav">
       <a href="https://claude.ai/code/artifact/512f79cc-ca9b-4c1e-b2fd-80647f25cd88#services">Services</a>
       <a href="https://claude.ai/code/artifact/0e97705c-3e13-4d96-86fe-0e55a4cd6381">Airport</a>
       <a href="https://claude.ai/code/artifact/512f79cc-ca9b-4c1e-b2fd-80647f25cd88#fleet">Fleet</a>
       <a href="https://claude.ai/code/artifact/512f79cc-ca9b-4c1e-b2fd-80647f25cd88#areas">Service area</a>
       <a href="https://claude.ai/code/artifact/273bcaa5-56cf-4375-9111-1c41ead44fae">Corporate</a>
+      <a class="m-nav-cta" href="../booking-funnel/index.html">Book a ride</a>
+      <a class="m-nav-tel" href="tel:+12065965504">Call (206) 596-5504</a>
     </nav>
     <div class="head-right">
       <a class="head-phone" href="tel:+12065965504">(206) 596-5504</a>
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
     </div>
   </div>
 </header>
@@ -109,7 +135,7 @@
     <h1>Kent car service — the closest chauffeur to <em>your door and the airport</em></h1>
     <p class="sub">We're based in Kent. Flat-rate Sea-Tac transfers are 12–18 minutes away, dispatch is local and answers around the clock, and your driver knows the difference between East Hill and the Valley.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a Kent ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a Kent ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks">
@@ -170,7 +196,7 @@
       <h3>Book a ride from Kent</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -188,7 +214,7 @@
     <h1>Bellevue car service — to SEA, downtown, or <em>wherever the day goes</em></h1>
     <p class="sub">Flat $89 sedan / $119 SUV airport transfers, corporate accounts built for the Eastside tech corridor, and a chauffeur who leaves early because they know what I‑405 does at 4:30.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a Bellevue ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a Bellevue ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks">
@@ -250,7 +276,7 @@
       <h3>Book a ride from Bellevue</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -268,7 +294,7 @@
     <h1>Redmond car service — <em>flight-tracked</em> transfers and corporate travel</h1>
     <p class="sub">Flat $109 sedan / $139 SUV to Sea-Tac, accounts for the Microsoft-campus and Overlake companies that move people constantly, and a driver who knows which building you actually mean.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a Redmond ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a Redmond ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks">
@@ -330,7 +356,7 @@
       <h3>Book a ride from Redmond</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -348,7 +374,7 @@
     <h1>Kirkland car service — airport runs, corporate travel, and <em>the waterfront</em></h1>
     <p class="sub">Flat $105 sedan / $135 SUV to Sea-Tac, accounts for the offices around Google Kirkland and Totem Lake, and wedding transportation that knows the Woodmark's entrance.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a Kirkland ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a Kirkland ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks">
@@ -408,7 +434,7 @@
       <h3>Book a ride from Kirkland</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -426,7 +452,7 @@
     <h1>Tacoma car service — <em>north to SEA</em>, downtown, and the piers</h1>
     <p class="sub">Flat $99 sedan / $129 SUV to Sea-Tac, with a driver who knows the I‑5 chokepoints through Fife and Federal Way and leaves early enough to beat them.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a Tacoma ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a Tacoma ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks">
@@ -487,7 +513,7 @@
       <h3>Book a ride from Tacoma</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -505,7 +531,7 @@
     <h1>Seattle car service — <em>every neighborhood, one number</em></h1>
     <p class="sub">Flat $89 sedan / $119 SUV to Sea-Tac from anywhere in the city, corporate accounts for South Lake Union and downtown, and a driver who knows which garage to use before the game.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $89 &middot; SUV $119 to SEA</span><span>Corporate &amp; events</span><span>Cruise-pier transfers</span><span>Dispatch 24/7</span></div>
@@ -539,7 +565,7 @@
       <h3>Book a ride from Seattle</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -557,7 +583,7 @@
     <h1>Renton car service — <em>one of the shortest airport runs we do</em></h1>
     <p class="sub">Flat $79 sedan / $109 SUV to Sea-Tac, 15–20 minutes down I‑405, with a driver who knows the Renton S‑curves better than anyone should have to.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $79 &middot; SUV $109 to SEA</span><span>~18 min to the airport</span><span>Corporate accounts</span><span>Dispatch 24/7</span></div>
@@ -591,7 +617,7 @@
       <h3>Book a ride from Renton</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -609,7 +635,7 @@
     <h1>Federal Way car service — <em>north to the airport, ahead of the I‑5 crowd</em></h1>
     <p class="sub">Flat $85 sedan / $115 SUV to Sea-Tac, and a driver who leaves early enough to beat the morning northbound crawl through Kent.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $85 &middot; SUV $115 to SEA</span><span>20–25 min to the airport</span><span>No surge pricing</span><span>Dispatch 24/7</span></div>
@@ -643,7 +669,7 @@
       <h3>Book a ride from Federal Way</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -661,7 +687,7 @@
     <h1>Auburn car service — <em>airport runs and valley corporate travel</em></h1>
     <p class="sub">Flat $89 sedan / $119 SUV to Sea-Tac, accounts for the distribution and manufacturing companies that fill the valley, and a driver who knows the warehouse-gate routine.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $89 &middot; SUV $119 to SEA</span><span>Corporate accounts</span><span>25–30 min to the airport</span><span>Dispatch 24/7</span></div>
@@ -695,7 +721,7 @@
       <h3>Book a ride from Auburn</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -713,7 +739,7 @@
     <h1>Puyallup car service — <em>up SR‑512, ahead of the interchange</em></h1>
     <p class="sub">Flat $109 sedan / $139 SUV to Sea-Tac, and a driver who knows the SR‑512 / I‑5 interchange and the SR‑167 toll-lane backup — and, in September, the Fair.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $109 &middot; SUV $139 to SEA</span><span>35–45 min to the airport</span><span>No surge pricing</span><span>Dispatch 24/7</span></div>
@@ -747,7 +773,7 @@
       <h3>Book a ride from Puyallup</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -765,7 +791,7 @@
     <h1>Lynnwood car service — <em>south through Seattle, with the buffer built in</em></h1>
     <p class="sub">Flat $109 sedan / $139 SUV to Sea-Tac, and a driver who treats the I‑5-through-Seattle drive with the respect it demands.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $109 &middot; SUV $139 to SEA</span><span>Cruise-pier transfers</span><span>35–45 min to the airport</span><span>Dispatch 24/7</span></div>
@@ -799,7 +825,7 @@
       <h3>Book a ride from Lynnwood</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -817,7 +843,7 @@
     <h1>Edmonds car service — <em>the bowl, the ferry, and the airport</em></h1>
     <p class="sub">Flat $119 sedan / $149 SUV to Sea-Tac, cruise-pier transfers, and a driver who knows the downtown Edmonds bowl and the ferry-holding-lane timing on SR‑104.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $119 &middot; SUV $149 to SEA</span><span>Cruise &amp; ferry connections</span><span>40–50 min to the airport</span><span>Dispatch 24/7</span></div>
@@ -851,7 +877,7 @@
       <h3>Book a ride from Edmonds</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -869,7 +895,7 @@
     <h1>Everett car service — <em>SEA, Paine Field, and the Boeing plant</em></h1>
     <p class="sub">Flat $139 sedan / $169 SUV to Sea-Tac, quick connections to Paine Field, and accounts for the largest concentration of aerospace and naval travel in the region.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $139 &middot; SUV $169 to SEA</span><span>Paine Field (PAE) connections</span><span>Corporate accounts</span><span>Dispatch 24/7</span></div>
@@ -903,7 +929,7 @@
       <h3>Book a ride from Everett</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -921,7 +947,7 @@
     <h1>Gig Harbor car service — <em>across the Narrows, on your schedule</em></h1>
     <p class="sub">Flat $139 sedan / $169 SUV to Sea-Tac — the bridge toll included in the quote — plus cruise transfers and a driver who knows the SR‑16 backup at the bridge.</p>
     <div class="hero-cta">
-      <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book a ride</a>
+      <a class="btn btn-solid" href="../booking-funnel/index.html">Book a ride</a>
       <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
     </div>
     <div class="ticks"><span>Sedan $139 &middot; SUV $169 to SEA</span><span>Bridge toll included</span><span>Cruise-pier transfers</span><span>Dispatch 24/7</span></div>
@@ -955,7 +981,7 @@
       <h3>Book a ride from Gig Harbor</h3>
       <p style="color:var(--cream-dim);font-size:14px;max-width:44ch;margin:8px auto 0;">See your flat SEA rate, or send any other trip for a quick quote.</p>
       <div class="hero-cta">
-        <a class="btn btn-solid" href="https://claude.ai/code/artifact/2350cbd7-c9ee-4077-b660-298c559785bf">Book now</a>
+        <a class="btn btn-solid" href="../booking-funnel/index.html">Book now</a>
         <a class="btn btn-line" href="tel:+12065965504">Call (206) 596-5504</a>
       </div>
     </div>
@@ -976,7 +1002,7 @@
       <a href="https://claude.ai/code/artifact/92288df2-4edd-40ac-b290-ff6d0ca5ac6b">Cruise &amp; wine tours</a>
     </div>
     <div class="foot-bar">
-      <span>Northwest Town Car Service &middot; Kent, WA &middot; (206) 596-5504</span>
+      <span>Northwest Town Car Service &middot; Serving Kent, WA &middot; (206) 596-5504</span>
       <span>Licensed WUTC carrier &middot; Fully insured</span>
     </div>
   </div>

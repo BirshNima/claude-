@@ -80,18 +80,44 @@
   .foot-links{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--cream-dim);margin-bottom:16px;}
   .foot-links a:hover{color:var(--brass-lit);}
   .foot-bar{padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-family:ui-monospace,monospace;font-size:11px;color:var(--cream-dim);}
+
+  /* ---- mobile nav (<=899px) ---- */
+  .m-nav-btn,.m-nav-cta,.m-nav-tel{display:none;}
+  @media (max-width:899px){
+    header.site .wrap{height:auto;min-height:62px;gap:12px;}
+    .wordmark{font-size:14px;letter-spacing:0.01em;}
+    .head-right{display:none;}
+    .m-nav-btn{order:2;margin-left:auto;flex:none;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;background:transparent;border:1px solid var(--line-2);border-radius:9px;color:var(--cream);cursor:pointer;}
+    .m-nav-btn:focus-visible{outline:2px solid var(--brass);outline-offset:2px;}
+    .m-nav-icon{position:relative;display:block;width:17px;height:2px;background:currentColor;}
+    .m-nav-icon::before,.m-nav-icon::after{content:"";position:absolute;left:0;width:17px;height:2px;background:currentColor;transition:transform .2s ease;}
+    .m-nav-icon::before{top:-6px;} .m-nav-icon::after{top:6px;}
+    .m-nav-btn[aria-expanded="true"] .m-nav-icon{background:transparent;}
+    .m-nav-btn[aria-expanded="true"] .m-nav-icon::before{transform:translateY(6px) rotate(45deg);}
+    .m-nav-btn[aria-expanded="true"] .m-nav-icon::after{transform:translateY(-6px) rotate(-45deg);}
+    header.site nav{position:absolute;left:0;right:0;top:100%;display:flex;flex-direction:column;gap:0;margin:0;font-size:15px;background:var(--forest-2);border-bottom:1px solid var(--line);box-shadow:0 20px 40px -24px rgba(0,0,0,.6);max-height:0;overflow:hidden;visibility:hidden;transition:max-height .24s ease,visibility .24s;}
+    header.site nav.m-open{max-height:82vh;overflow-y:auto;visibility:visible;}
+    header.site nav a{padding:14px 28px;border-top:1px solid var(--line);color:var(--cream);}
+    header.site nav a:first-child{border-top:none;}
+    .m-nav-cta,.m-nav-tel{display:block;margin:10px 20px;padding:12px;text-align:center;font-weight:600;border-radius:999px;border-top:none!important;}
+    .m-nav-cta{background:var(--brass);color:#1c1305;}
+    .m-nav-tel{margin-top:0;border:1px solid var(--line-2)!important;color:var(--cream);font-family:ui-monospace,monospace;font-size:13px;}
+  }
 </style>
 </head>
 <body>
 <header class="site">
   <div class="wrap">
     <a class="wordmark" href="../index.html">NORTHWEST TOWN CAR <em>SERVICE</em></a>
-    <nav>
+    <button class="m-nav-btn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="site-nav"><span class="m-nav-icon"></span></button>
+    <nav id="site-nav">
       <a href="../index.html#services">Services</a>
       <a href="../airport-transportation.html">Airport</a>
       <a href="../index.html#fleet">Fleet</a>
       <a href="../index.html#areas">Service area</a>
       <a href="../corporate-transportation.html">Corporate</a>
+      <a class="m-nav-cta" href="../booking-funnel/index.html">Book a ride</a>
+      <a class="m-nav-tel" href="tel:+12065965504">Call (206) 596-5504</a>
     </nav>
     <div class="head-right">
       <a class="head-phone" href="tel:+12065965504">(206) 596-5504</a>
@@ -210,6 +236,16 @@
     {"@type":"Question","name":"Can you take us to the Seattle cruise terminals from Tacoma?","acceptedAnswer":{"@type":"Answer","text":"Yes — Pier 66 (Bell Street) and Pier 91 (Smith Cove), timed to your cruise line's boarding window, with luggage help at the curb."}}
   ]
 }
+</script>
+<script>
+(function(){
+  var b=document.querySelector('.m-nav-btn'),n=document.getElementById('site-nav');
+  if(!b||!n)return;
+  function set(o){b.setAttribute('aria-expanded',o?'true':'false');n.classList.toggle('m-open',o);}
+  b.addEventListener('click',function(){set(b.getAttribute('aria-expanded')!=='true');});
+  n.addEventListener('click',function(e){if(e.target.closest('a'))set(false);});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')set(false);});
+})();
 </script>
 </body>
 </html>
