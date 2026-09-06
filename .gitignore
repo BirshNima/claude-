@@ -68,3 +68,7 @@ tmp/
 
 # Local tools (gh CLI, etc.)
 /bin/
+
+# Build artifacts
+northwesttowncarservice-site.zip
+dist/
