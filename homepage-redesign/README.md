@@ -69,7 +69,7 @@ A visitor to the homepage learns, above the fold:
 
 **Remove**
 - The `<form action="mailto:" enctype="text/plain">` — unreliable, untrackable, no CRM. Replaced by the funnel.
-- The personal `birhanunima@yahoo.com` address in the primary contact position (kept `nwesttowncarservice@gmail.com` in the footer; ideally set up `book@northwesttowncarservice.com`).
+- The personal `birhanunima@yahoo.com` address in the primary contact position. The footer now uses `booking@northwesttowncarservice.com` (set up this mailbox on the domain, or forward it, before launch).
 - The unrelated "Towne Car Co." mock that was at the repo root (`index.html`) — wrong brand; deleted 2026-09-06.
 - Vague filler ("Since day one").
 
