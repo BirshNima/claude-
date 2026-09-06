@@ -9,7 +9,7 @@
    caller applies the returned ops). This keeps the dedup + status logic in one
    tested place regardless of platform.
 
-   INPUT: the `payload` object POSTed by booking-funnel/index.html:
+   INPUT: the `payload` object POSTed by homepage-redesign/booking-funnel/index.html:
      {
        reference: "NWTC-260902-4821",
        kind: "reservation" | "quote-request" | "corporate-lead",

@@ -35,9 +35,13 @@ artifacts cross-link by URL. On deploy each is an independent page
 (`/service-area/<city>`, `/blog/<slug>`).
 
 The local `.html` files use relative links (`airport-transportation.html`,
-`index.html#areas`, `service-area/<city>.html`) and point "Book a ride" at the
-funnel artifact. **Before deploying, swap those** for your real paths (`/`,
-`/airport-transportation`, `/book`, …).
+`index.html#areas`, `service-area/<city>.html`, `booking-funnel/index.html`).
+This folder is now **self-contained and deployable as the web root** — the
+booking funnel lives at `booking-funnel/` inside it, so every "Book a ride" CTA
+resolves both when served locally and once deployed. On deploy you can still
+prettify the paths (`/`, `/airport-transportation`, `/book`) but nothing is
+broken as-is. The two tabbed preview artifacts (`_*.frag.html`) cross-link by
+claude.ai URL instead and are not part of the deployable tree.
 
 ## The 5-second test
 

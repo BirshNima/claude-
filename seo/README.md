@@ -24,7 +24,7 @@ Step 9 of the revenue core. Local-first, commercial-intent, measured to bookings
 - **Google Search Console + GA4 + GTM** access (yours) — Section 11 is inert without them.
 - **Google Business Profile** ownership (yours) — Section 8 is the highest-leverage work.
 - The **6 service pages** from `homepage-redesign/` deployed at real URLs.
-- The **funnel** wired to the CRM (`booking-funnel/` + `crm/`) so organic leads are attributed.
+- The **funnel** wired to the CRM (`homepage-redesign/booking-funnel/` + `crm/`) so organic leads are attributed.
 
 ## Next builds this plan calls for
 

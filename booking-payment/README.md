@@ -30,7 +30,7 @@ funnel submit
 
 ## Wiring the funnel
 
-`booking-funnel/index.html` posts to `/intake` when `window.NWTC_INTAKE_ENDPOINT`
+`homepage-redesign/booking-funnel/index.html` posts to `/intake` when `window.NWTC_INTAKE_ENDPOINT`
 is set (e.g. in the page template or a small inline script before the funnel
 script). Left unset, the funnel runs standalone — localStorage + the
 "email dispatch" fallback button only. On a failed post the confirmation screen

@@ -496,7 +496,7 @@ async function onRefund(charge) {
 }
 
 /* ------------------------------------------------------- pricing request map
-   Mirrors booking-funnel/index.html pricingRequest(d)/resolveVehicleClass(d).
+   Mirrors homepage-redesign/booking-funnel/index.html pricingRequest(d)/resolveVehicleClass(d).
    Keep in sync with the funnel. account stays null server-side unless the
    request is tied to an authenticated corporate account.
    ------------------------------------------------------------------------- */
