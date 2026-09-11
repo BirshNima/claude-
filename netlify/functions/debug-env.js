@@ -10,9 +10,13 @@ exports.handler = async () => {
     const v = process.env[n];
     report[n] = v ? { present: true, length: v.length, startsWith: v.slice(0, 6) } : { present: false };
   }
+  // Every env var key Netlify actually injects into this function, sorted.
+  // Names only, never values — lets us see if custom vars show up at all
+  // (vs. only Netlify's own built-ins like NETLIFY, DEPLOY_URL, URL, etc.)
+  const allKeys = Object.keys(process.env).sort();
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(report, null, 2),
+    body: JSON.stringify({ checked: report, allKeyNamesInjected: allKeys }, null, 2),
   };
 };
