@@ -11,11 +11,14 @@
 [functions]
   node_bundler = "esbuild"
 
-# Diagnostic only — not secret, safe to commit. If this shows up in
-# debug-env but the dashboard-added variables don't, the dashboard save is
-# the problem, not the function code.
+# Diagnostic only — not secret, safe to commit. Trying both the context-scoped
+# form and the functions-scoped form to isolate exactly which injection path
+# this account/site actually honors.
 [context.production.environment]
   SITE_ORIGIN_FROM_TOML = "https://northwesttowncarservice.com"
+
+[functions.environment]
+  SITE_ORIGIN_FROM_FUNCTIONS_TOML = "https://northwesttowncarservice.com"
 
 # ---- Clean URLs for the funnel + Stripe to call --------------------------
 # The funnel posts to /intake, dispatch calls /deposit-link and

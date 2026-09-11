@@ -5,7 +5,7 @@
 exports.handler = async () => {
   const names = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SITE_ORIGIN',
     'DISPATCH_API_TOKEN', 'DISPATCH_EMAIL', 'AIRTABLE_TOKEN', 'AIRTABLE_BASE_ID',
-    'SITE_ORIGIN_FROM_TOML'];
+    'SITE_ORIGIN_FROM_TOML', 'SITE_ORIGIN_FROM_FUNCTIONS_TOML'];
   const report = {};
   for (const n of names) {
     const v = process.env[n];
