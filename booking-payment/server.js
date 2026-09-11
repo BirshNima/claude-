@@ -36,10 +36,17 @@ const INTAKE = require('../crm/intake.js');                    // NWTCIntake
 const crm = require('./crm-airtable.js');
 const table = require('../pricing/pricing-table.json');
 
+// Lazy — built on first use, not at module load. /intake never touches
+// Stripe at all, so it must keep working even before STRIPE_SECRET_KEY is
+// configured; building this eagerly broke every endpoint on a missing key.
 // Fetch-based HTTP client: works unchanged on Node 18+ AND on edge runtimes
 // (Cloudflare Workers) that have no `http`/`https` module. Stripe's default
 // client needs Node's http module, which Workers don't provide.
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() });
+let _stripe = null;
+function stripe() {
+  if (!_stripe) _stripe = Stripe(process.env.STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() });
+  return _stripe;
+}
 const SITE = process.env.SITE_ORIGIN || 'https://northwesttowncarservice.com';
 const DISPATCH_TOKEN = process.env.DISPATCH_API_TOKEN;
 const PRICE_TOLERANCE = Number(process.env.PRICE_TOLERANCE || 0.01);
@@ -290,7 +297,7 @@ async function handleDepositLink(rawBody, headers) {
 
   let session;
   try {
-    session = await stripe.checkout.sessions.create(params, { idempotencyKey: idemKey });
+    session = await stripe().checkout.sessions.create(params, { idempotencyKey: idemKey });
   } catch (e) {
     console.error('[deposit-link] Stripe error:', e.message);
     return bad(`Stripe: ${e.message}`, 502);
@@ -386,7 +393,7 @@ async function handleStripeWebhook(rawBody, headers) {
   const sig = headers['stripe-signature'] || headers['Stripe-Signature'];
   let event;
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    event = stripe().webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (e) {
     return bad(`signature verification failed: ${e.message}`, 400);
   }
@@ -486,7 +493,7 @@ async function onPaymentFailed(pi) {
 
 async function onRefund(charge) {
   const reference = (charge.metadata || {}).reference
-    || (charge.payment_intent && (await stripe.paymentIntents.retrieve(charge.payment_intent)).metadata.reference);
+    || (charge.payment_intent && (await stripe().paymentIntents.retrieve(charge.payment_intent)).metadata.reference);
   if (!reference) return;
   const refunded = (charge.amount_refunded || 0) / 100;
   await crm.recordPayment({
