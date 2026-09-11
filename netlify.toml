@@ -11,6 +11,12 @@
 [functions]
   node_bundler = "esbuild"
 
+# Diagnostic only — not secret, safe to commit. If this shows up in
+# debug-env but the dashboard-added variables don't, the dashboard save is
+# the problem, not the function code.
+[context.production.environment]
+  SITE_ORIGIN_FROM_TOML = "https://northwesttowncarservice.com"
+
 # ---- Clean URLs for the funnel + Stripe to call --------------------------
 # The funnel posts to /intake, dispatch calls /deposit-link and
 # /record-cash-payment, Stripe calls /stripe-webhook. These map onto the
