@@ -36,7 +36,10 @@ const INTAKE = require('../crm/intake.js');                    // NWTCIntake
 const crm = require('./crm-airtable.js');
 const table = require('../pricing/pricing-table.json');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+// Fetch-based HTTP client: works unchanged on Node 18+ AND on edge runtimes
+// (Cloudflare Workers) that have no `http`/`https` module. Stripe's default
+// client needs Node's http module, which Workers don't provide.
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() });
 const SITE = process.env.SITE_ORIGIN || 'https://northwesttowncarservice.com';
 const DISPATCH_TOKEN = process.env.DISPATCH_API_TOKEN;
 const PRICE_TOLERANCE = Number(process.env.PRICE_TOLERANCE || 0.01);
