@@ -1,0 +1,41 @@
+# Northwest Town Car Service — Netlify config
+# The live site is hosted on SiteGround; this Netlify site exists ONLY to run
+# the booking-payment + comms serverless functions. Publishing the static
+# site here too is harmless (gives the Netlify URL something to show) but is
+# not what serves real traffic.
+
+[build]
+  publish = "homepage-redesign"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# ---- Clean URLs for the funnel + Stripe to call --------------------------
+# The funnel posts to /intake, dispatch calls /deposit-link and
+# /record-cash-payment, Stripe calls /stripe-webhook. These map onto the
+# actual function files under netlify/functions/.
+
+[[redirects]]
+  from = "/intake"
+  to = "/.netlify/functions/intake"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/deposit-link"
+  to = "/.netlify/functions/deposit-link"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/record-cash-payment"
+  to = "/.netlify/functions/record-cash-payment"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stripe-webhook"
+  to = "/.netlify/functions/stripe-webhook"
+  status = 200
+  force = true
