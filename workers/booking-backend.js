@@ -14,4 +14,26 @@
    ============================================================================ */
 import { worker } from '../booking-payment/server.js';
 
-export default worker();
+const real = worker();
+
+// TEMPORARY diagnostic — reports which secrets are bound and their length /
+// first+last 4 chars only, never the full value. Remove once everything's
+// confirmed working. GET /debug-env
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    if (url.pathname === '/debug-env') {
+      const names = ['STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'SITE_ORIGIN',
+        'DISPATCH_API_TOKEN', 'DISPATCH_EMAIL', 'AIRTABLE_TOKEN', 'AIRTABLE_BASE_ID'];
+      const report = {};
+      for (const n of names) {
+        const v = env[n];
+        report[n] = v
+          ? { present: true, length: v.length, preview: v.length > 8 ? `${v.slice(0, 4)}...${v.slice(-4)}` : '(short)' }
+          : { present: false };
+      }
+      return new Response(JSON.stringify(report, null, 2), { headers: { 'Content-Type': 'application/json' } });
+    }
+    return real.fetch(request, env, ctx);
+  },
+};
