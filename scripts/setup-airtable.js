@@ -53,7 +53,7 @@ const dt = (name) => ({ name, type: 'dateTime', options: { dateFormat: { name: '
 const date = (name) => ({ name, type: 'date', options: { dateFormat: { name: 'iso' } } });
 const created = (name) => ({ name, type: 'createdTime', options: { result: { type: 'dateTime', options: { dateFormat: { name: 'iso' }, timeFormat: { name: '24hour' }, timeZone: 'America/Los_Angeles' } } } });
 const select = (name, choices) => ({ name, type: 'singleSelect', options: { choices: choices.map((n) => ({ name: n })) } });
-const link = (name, tableId) => ({ name, type: 'multipleRecordLinks', options: { linkedTableId: tableId, isReversed: false } });
+const link = (name, tableId) => ({ name, type: 'multipleRecordLinks', options: { linkedTableId: tableId } });
 
 // Tables in dependency order — link targets must already exist.
 const TABLES = [
@@ -122,9 +122,9 @@ const TABLES = [
   {
     name: 'Payments',
     fields: (ids) => [
-      link('Booking', ids['Bookings']), money('Amount'),
+      text('Processor Ref'), link('Booking', ids['Bookings']), money('Amount'),
       select('Type', ['Deposit', 'Balance', 'Gratuity', 'Refund']),
-      select('Method', ['card', 'cash']), text('Processor Ref'),
+      select('Method', ['card', 'cash']),
       select('Status', ['Pending', 'Succeeded', 'Failed', 'Refunded']),
       long('Note'), created('Created'),
     ],
@@ -154,11 +154,19 @@ async function main() {
   const ids = {};
   for (const t of TABLES) {
     console.log(`Creating table "${t.name}"...`);
-    const fields = t.fields(ids);
+    const allFields = t.fields(ids);
+    // createdTime fields can't be created as part of table creation — Airtable
+    // requires the table to exist first, then adds them as a separate call.
+    const deferred = allFields.filter((f) => f.type === 'createdTime');
+    const fields = allFields.filter((f) => f.type !== 'createdTime');
     try {
       const result = await api('/tables', { method: 'POST', body: JSON.stringify({ name: t.name, fields }) });
       ids[t.name] = result.id;
       console.log(`  ok — ${result.id}`);
+      for (const f of deferred) {
+        await api(`/tables/${result.id}/fields`, { method: 'POST', body: JSON.stringify({ name: f.name, type: f.type }) });
+        console.log(`  added deferred field "${f.name}"`);
+      }
     } catch (e) {
       console.error(`  FAILED: ${e.message}`);
       console.error('  Stopping — fix the error above (often a duplicate table name), then re-run.');
