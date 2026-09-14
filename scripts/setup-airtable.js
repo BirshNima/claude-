@@ -15,12 +15,19 @@
    ============================================================================ */
 'use strict';
 
-const TOKEN = process.env.AIRTABLE_TOKEN;
-const BASE = process.env.AIRTABLE_BASE_ID;
+// .trim() + strip embedded whitespace/newlines: copy-pasting a token into a
+// shell prompt easily picks up a stray leading/trailing/embedded newline
+// (terminal quirks, clipboard trailing newline from a "copy" button, etc.),
+// which fetch()'s Headers rejects outright. Sanitize defensively so a messy
+// paste still works instead of failing deep in an HTTP call.
+const clean = (s) => (s || '').replace(/\s+/g, '');
+const TOKEN = clean(process.env.AIRTABLE_TOKEN);
+const BASE = clean(process.env.AIRTABLE_BASE_ID);
 if (!TOKEN || !BASE) {
   console.error('Set AIRTABLE_TOKEN and AIRTABLE_BASE_ID env vars first.');
   process.exit(1);
 }
+console.log(`Using token starting "${TOKEN.slice(0, 8)}..." (${TOKEN.length} chars), base ${BASE}`);
 
 const API = `https://api.airtable.com/v0/meta/bases/${BASE}/tables`;
 
