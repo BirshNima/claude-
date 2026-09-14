@@ -53,7 +53,7 @@ const dt = (name) => ({ name, type: 'dateTime', options: { dateFormat: { name: '
 const date = (name) => ({ name, type: 'date', options: { dateFormat: { name: 'iso' } } });
 const created = (name) => ({ name, type: 'createdTime', options: { result: { type: 'dateTime', options: { dateFormat: { name: 'iso' }, timeFormat: { name: '24hour' }, timeZone: 'America/Los_Angeles' } } } });
 const select = (name, choices) => ({ name, type: 'singleSelect', options: { choices: choices.map((n) => ({ name: n })) } });
-const link = (name, tableId) => ({ name, type: 'multipleRecordLinks', options: { linkedTableId: tableId } });
+const link = (name, tableId) => ({ name, type: 'multipleRecordLinks', options: { linkedTableId: tableId, isReversed: false } });
 
 // Tables in dependency order — link targets must already exist.
 const TABLES = [
