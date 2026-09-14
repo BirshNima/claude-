@@ -102,6 +102,17 @@ const TABLES = [
     ],
   },
   {
+    name: 'Quotes',
+    fields: (ids) => [
+      text('Reference'),
+      select('Method', ['flat', 'hourly', 'manual-quote', 'corporate']),
+      money('Total'), long('Line Items'),
+      select('Status', ['Draft', 'Sent', 'Accepted', 'Expired', 'Declined']),
+      dt('Sent At'), dt('Valid Until'), text('Approved By'),
+      link('Lead', ids['Leads']),
+    ],
+  },
+  {
     name: 'Bookings',
     fields: (ids) => [
       text('Reference'), link('Customer', ids['Customers']), link('Lead', ids['Leads']),
