@@ -400,7 +400,10 @@ async function handleStripeWebhook(rawBody, headers) {
   const sig = headers['stripe-signature'] || headers['Stripe-Signature'];
   let event;
   try {
-    event = stripe().webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    // constructEventAsync, not constructEvent: the sync version needs Node's
+    // crypto module, which Cloudflare Workers doesn't have — only the async
+    // Web Crypto API. constructEventAsync works fine on both Node and Workers.
+    event = await stripe().webhooks.constructEventAsync(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (e) {
     return bad(`signature verification failed: ${e.message}`, 400);
   }
