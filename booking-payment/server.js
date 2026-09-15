@@ -191,6 +191,11 @@ async function handleIntake(rawBody) {
    ========================================================================== */
 async function handleDepositLink(rawBody, headers) {
   const auth = (headers.authorization || headers.Authorization || '').replace(/^Bearer\s+/i, '');
+  console.error('[debug-auth]', JSON.stringify({
+    headerKeys: Object.keys(headers), authLen: auth.length, authPreview: auth ? `${auth.slice(0,4)}...${auth.slice(-4)}` : '(empty)',
+    tokenPresent: !!dispatchToken(), tokenLen: (dispatchToken()||'').length, tokenPreview: dispatchToken() ? `${dispatchToken().slice(0,4)}...${dispatchToken().slice(-4)}` : '(empty)',
+    match: auth === dispatchToken(),
+  }));
   if (!dispatchToken() || auth !== dispatchToken()) return bad('unauthorized', 401);
 
   let req;
