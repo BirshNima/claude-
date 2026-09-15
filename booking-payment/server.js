@@ -47,9 +47,16 @@ function stripe() {
   if (!_stripe) _stripe = Stripe(process.env.STRIPE_SECRET_KEY, { httpClient: Stripe.createFetchHttpClient() });
   return _stripe;
 }
-const SITE = process.env.SITE_ORIGIN || 'https://northwesttowncarservice.com';
-const DISPATCH_TOKEN = process.env.DISPATCH_API_TOKEN;
-const PRICE_TOLERANCE = Number(process.env.PRICE_TOLERANCE || 0.01);
+// These three were `const X = process.env.Y` at module top-level, which on
+// Cloudflare Workers evaluates at cold-start — BEFORE the per-request env is
+// ever assigned into process.env (worker() does that inside fetch()). They'd
+// be frozen at "undefined" forever. SITE and PRICE_TOLERANCE masked this with
+// fallback defaults that happened to be reasonable; DISPATCH_TOKEN had none,
+// so the /deposit-link and /record-cash-payment auth gate silently rejected
+// every request, correct token or not. Read fresh at each call site instead.
+const siteOrigin = () => process.env.SITE_ORIGIN || 'https://northwesttowncarservice.com';
+const dispatchToken = () => process.env.DISPATCH_API_TOKEN;
+const priceTolerance = () => Number(process.env.PRICE_TOLERANCE || 0.01);
 
 /* ------------------------------------------------------------------ helpers */
 const json = (status, body) => ({
@@ -109,7 +116,7 @@ async function handleIntake(rawBody) {
   let verified = null;
   if (q && q !== 'corporate' && q.finalAmount != null) {
     const req = buildPricingRequest(payload.values);           // account stays null here
-    const v = PRICING.verifyQuote(q.finalAmount, req, table, PRICE_TOLERANCE);
+    const v = PRICING.verifyQuote(q.finalAmount, req, table, priceTolerance());
     verified = v;
     if (!v.valid) {
       // Do NOT reject the lead — capture it, but flag for dispatch and drop the
@@ -184,7 +191,7 @@ async function handleIntake(rawBody) {
    ========================================================================== */
 async function handleDepositLink(rawBody, headers) {
   const auth = (headers.authorization || headers.Authorization || '').replace(/^Bearer\s+/i, '');
-  if (!DISPATCH_TOKEN || auth !== DISPATCH_TOKEN) return bad('unauthorized', 401);
+  if (!dispatchToken() || auth !== dispatchToken()) return bad('unauthorized', 401);
 
   let req;
   try { req = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody; }
@@ -286,8 +293,8 @@ async function handleDepositLink(rawBody, headers) {
   }
 
   const params = PAY.checkoutSessionParams(booking, plan, {
-    successUrl: `${SITE}/booking/confirmed?ref=${encodeURIComponent(reference)}&s={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${SITE}/booking/deposit?ref=${encodeURIComponent(reference)}`,
+    successUrl: `${siteOrigin()}/booking/confirmed?ref=${encodeURIComponent(reference)}&s={CHECKOUT_SESSION_ID}`,
+    cancelUrl: `${siteOrigin()}/booking/deposit?ref=${encodeURIComponent(reference)}`,
     statementDescriptor: 'NW TOWN CAR DEP',
     expiresMinutes: Number(process.env.CHECKOUT_EXPIRES_MINUTES || 1440),
   });
@@ -344,7 +351,7 @@ async function handleDepositLink(rawBody, headers) {
    ========================================================================== */
 async function handleRecordCash(rawBody, headers) {
   const auth = (headers.authorization || headers.Authorization || '').replace(/^Bearer\s+/i, '');
-  if (!DISPATCH_TOKEN || auth !== DISPATCH_TOKEN) return bad('unauthorized', 401);
+  if (!dispatchToken() || auth !== dispatchToken()) return bad('unauthorized', 401);
 
   let req;
   try { req = typeof rawBody === 'string' ? JSON.parse(rawBody) : rawBody; }
