@@ -587,10 +587,35 @@ function netlify(fn, { rawBodyFor } = {}) {
 
 // ---- Cloudflare Workers
 //      export default { fetch: worker(routes) }
+//
+// CORS: /intake is called directly from the customer's browser (the booking
+// funnel, a different origin than this Worker), so it needs preflight
+// (OPTIONS) handling and an Access-Control-Allow-Origin header on the real
+// response, or the browser silently blocks it before JS ever sees a result —
+// curl/server-to-server calls (dispatch, Stripe) never hit this, which is why
+// it's easy to miss testing only with curl. /deposit-link, /record-cash-payment,
+// and /stripe-webhook aren't called from a browser, but allowing CORS on them
+// too is harmless (they're still bearer-token / signature gated).
+const ALLOWED_ORIGINS = [
+  'https://www.northwesttowncarservice.com',
+  'https://northwesttowncarservice.com',
+];
+function corsHeaders(request) {
+  const origin = request.headers.get('origin');
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) return {};
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+}
 function worker() {
   return {
     async fetch(request, env) {
       Object.assign(process.env, env); // Workers pass secrets via env
+      const cors = corsHeaders(request);
+      if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
       const url = new URL(request.url);
       const headers = lower(Object.fromEntries(request.headers));
       const raw = await request.text();
@@ -600,7 +625,7 @@ function worker() {
       else if (url.pathname.endsWith('/record-cash-payment') && request.method === 'POST') r = await handleRecordCash(raw, headers);
       else if (url.pathname.endsWith('/stripe-webhook') && request.method === 'POST') r = await handleStripeWebhook(raw, headers);
       else r = bad('not found', 404);
-      return new Response(r.body, { status: r.status, headers: r.headers });
+      return new Response(r.body, { status: r.status, headers: { ...r.headers, ...cors } });
     },
   };
 }
