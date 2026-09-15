@@ -69,6 +69,8 @@ tmp/
 # Local tools (gh CLI, etc.)
 /bin/
 
-# Build artifacts
+# Build artifacts — one-off deploy bundles built during SiteGround uploads
 northwesttowncarservice-site.zip
+nwtc-*.zip
+nwtc-*-page.zip
 dist/
