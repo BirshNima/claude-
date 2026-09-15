@@ -32,7 +32,21 @@ export default {
           ? { present: true, length: v.length, preview: v.length > 8 ? `${v.slice(0, 4)}...${v.slice(-4)}` : '(short)' }
           : { present: false };
       }
-      return new Response(JSON.stringify(report, null, 2), { headers: { 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ VERSION_MARKER: 'debugauth-v2', ...report }, null, 2), { headers: { 'Content-Type': 'application/json' } });
+    }
+    // TEMPORARY: mirrors the auth check server.js does, so we can see from
+    // outside whether the deployed bundle has the dispatchToken() fix without
+    // depending on wrangler tail. Remove alongside the other debug code.
+    if (url.pathname === '/debug-auth-direct') {
+      const headers = Object.fromEntries(request.headers);
+      const auth = (headers.authorization || headers.Authorization || '').replace(/^Bearer\s+/i, '');
+      const tok = env.DISPATCH_API_TOKEN || '';
+      return new Response(JSON.stringify({
+        VERSION_MARKER: 'debugauth-v2',
+        authLen: auth.length, authPreview: auth ? `${auth.slice(0,4)}...${auth.slice(-4)}` : '(empty)',
+        tokenLen: tok.length, tokenPreview: tok ? `${tok.slice(0,4)}...${tok.slice(-4)}` : '(empty)',
+        match: auth === tok,
+      }, null, 2), { headers: { 'Content-Type': 'application/json' } });
     }
     return real.fetch(request, env, ctx);
   },
