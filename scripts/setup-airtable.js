@@ -123,6 +123,7 @@ const TABLES = [
       money('Price'), money('Deposit Amount'), money('Deposit Paid'), money('Balance'), money('Cash Due'),
       text('Deposit Link'), text('Deposit Session Id'), text('Deposit Note'), dt('Deposit Link Sent'), dt('Deposit Paid At'),
       select('Payment Method', ['Card', 'Cash']),
+      select('Payment Preference', ['card', 'cash']),
       money('Fare Collected'), dt('Fare Collected At'),
       select('Status', ['Reserved', 'Confirmed', 'Needs Approval', 'Assigned', 'Deposit Paid', 'Payment Held', 'Completed', 'No-show', 'Cancelled']),
       check('Driver Assigned'), num('Customer Trip Count'),
