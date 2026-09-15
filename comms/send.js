@@ -17,14 +17,21 @@
 const COMMS = require('./messages.js');           // NWTCComms
 const crm = require('../booking-payment/crm-airtable.js');
 
-const TWILIO_SID = process.env.TWILIO_ACCOUNT_SID;
-const TWILIO_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-const TWILIO_FROM = process.env.TWILIO_FROM_NUMBER;
-const TWILIO_MSID = process.env.TWILIO_MESSAGING_SERVICE_SID; // optional, preferred
-const EMAIL_ENDPOINT = process.env.EMAIL_API_URL;             // e.g. https://api.postmarkapp.com/email
-const EMAIL_TOKEN = process.env.EMAIL_API_TOKEN;
-const EMAIL_FROM = process.env.EMAIL_FROM || COMMS.constants.FROM_EMAIL;
-const DRY_RUN = process.env.COMMS_DRY_RUN === '1';
+// Read fresh at each call site, not cached at module load. On Cloudflare
+// Workers, module-top-level `const X = process.env.Y` evaluates whenever this
+// module is first require()'d — which, if that ever happens before a
+// request's env has been assigned into process.env, freezes X at undefined
+// for the isolate's whole lifetime. This exact pattern silently broke
+// DISPATCH_API_TOKEN in server.js (see that file's comment) — applying the
+// same fix here pre-emptively, before Twilio/email are ever wired.
+const twilioSid = () => process.env.TWILIO_ACCOUNT_SID;
+const twilioToken = () => process.env.TWILIO_AUTH_TOKEN;
+const twilioFrom = () => process.env.TWILIO_FROM_NUMBER;
+const twilioMsid = () => process.env.TWILIO_MESSAGING_SERVICE_SID; // optional, preferred
+const emailEndpoint = () => process.env.EMAIL_API_URL;             // e.g. https://api.postmarkapp.com/email
+const emailToken = () => process.env.EMAIL_API_TOKEN;
+const emailFrom = () => process.env.EMAIL_FROM || COMMS.constants.FROM_EMAIL;
+const isDryRun = () => process.env.COMMS_DRY_RUN === '1';
 
 /* ---------------------------------------------------------------- dedupe ---
    A tiny "Messages" table (Ref, Template, Channel, Status, Sent At, Error).
@@ -53,7 +60,7 @@ async function deliver(msg) {
   try {
     result = msg.channel === 'sms'
       ? await withRetry(() => sendSms(msg.to, rendered.text))
-      : await withRetry(() => sendEmail(msg.to, msg.from || EMAIL_FROM, rendered.subject, rendered.text));
+      : await withRetry(() => sendEmail(msg.to, msg.from || emailFrom(), rendered.subject, rendered.text));
   } catch (e) {
     await log(msg, dedupeKey, 'Failed', e.message);
     return { ok: false, channel: msg.channel, templateId, error: e.message };
@@ -76,16 +83,17 @@ async function deliverAll(messages) {
 /* ------------------------------------------------------------- providers */
 
 async function sendSms(to, body) {
-  if (DRY_RUN) { console.log(`[dry-run sms] ${to}\n${body}\n`); return { providerId: 'dry' }; }
-  if (!TWILIO_SID || !TWILIO_TOKEN) throw new Error('Twilio not configured');
+  if (isDryRun()) { console.log(`[dry-run sms] ${to}\n${body}\n`); return { providerId: 'dry' }; }
+  const sid = twilioSid(), token = twilioToken();
+  if (!sid || !token) throw new Error('Twilio not configured');
   const params = new URLSearchParams({ To: to, Body: body });
-  if (TWILIO_MSID) params.set('MessagingServiceSid', TWILIO_MSID);
-  else params.set('From', TWILIO_FROM);
+  if (twilioMsid()) params.set('MessagingServiceSid', twilioMsid());
+  else params.set('From', twilioFrom());
 
-  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
     method: 'POST',
     headers: {
-      Authorization: 'Basic ' + Buffer.from(`${TWILIO_SID}:${TWILIO_TOKEN}`).toString('base64'),
+      Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: params,
@@ -96,14 +104,15 @@ async function sendSms(to, body) {
 }
 
 async function sendEmail(to, from, subject, text) {
-  if (DRY_RUN) { console.log(`[dry-run email] ${to}  «${subject}»\n${text}\n`); return { providerId: 'dry' }; }
-  if (!EMAIL_ENDPOINT || !EMAIL_TOKEN) throw new Error('email sender not configured');
-  const res = await fetch(EMAIL_ENDPOINT, {
+  if (isDryRun()) { console.log(`[dry-run email] ${to}  «${subject}»\n${text}\n`); return { providerId: 'dry' }; }
+  const endpoint = emailEndpoint(), token = emailToken();
+  if (!endpoint || !token) throw new Error('email sender not configured');
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      'X-Postmark-Server-Token': EMAIL_TOKEN,   // Postmark; for SES swap this whole fn
+      'X-Postmark-Server-Token': token,   // Postmark; for SES swap this whole fn
     },
     body: JSON.stringify({ From: from, To: to, Subject: subject, TextBody: text, MessageStream: 'outbound' }),
   });
