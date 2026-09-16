@@ -97,6 +97,36 @@ async function notifyDispatch(subject, lines) {
   } catch (e) {
     console.error('[dispatch] alert failed:', e.message);
   }
+  await notifyDispatchSms(subject);
+}
+
+/* SMS alert — short, just the subject line (full detail is in Slack/Airtable;
+   a wall of text over SMS is both costly and hard to read). Silent no-op if
+   Twilio or the destination number aren't configured, so this never blocks
+   the main alert or the request. */
+async function notifyDispatchSms(subject) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_FROM_NUMBER;
+  const to = process.env.DISPATCH_SMS_NUMBER;
+  if (!sid || !token || !from || !to) return; // not configured yet — fine
+  try {
+    const params = new URLSearchParams({ To: to, From: from, Body: `NWTC: ${subject}` });
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params,
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error('[dispatch] sms failed:', res.status, body.slice(0, 200));
+    }
+  } catch (e) {
+    console.error('[dispatch] sms failed:', e.message);
+  }
 }
 
 /* ============================================================================
